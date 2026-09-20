@@ -19,9 +19,12 @@ RULES = [
 
 class Command(BaseCommand):
     help = 'Add your initial 13 rules to an empty rulebook.'
+
     def handle(self, *args, **kwargs):
         if Rule.objects.exists():
             self.stdout.write('Rulebook already exists; no changes made.')
+
             return
+
         Rule.objects.bulk_create([Rule(text=text, weight=1) for text in RULES])
         self.stdout.write(self.style.SUCCESS('Added your 13 trading rules.'))

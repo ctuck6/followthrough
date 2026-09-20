@@ -4,7 +4,7 @@
 - Follow PEP 8 guidelines strictly.
 - Max line length is 88 characters.
 - Use explicit type hints for all function definitions.
-- New/empty lines before and after if/else statements, break/continue key words, etc.
+- New/empty lines before and after if/else statements, break/continue, return key words, etc.
 - Sort all imports using `isort` alphabetical guidelines.
 
 ## Verification Commands
