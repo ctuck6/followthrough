@@ -1,0 +1,24 @@
+export const dateKey = date => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+export const letterGrade = score => score === null ? '—' : score >= 90 ? 'A' : score >= 80 ? 'B' : score >= 70 ? 'C' : score >= 60 ? 'D' : 'F';
+export function monthCells(month) {
+  const [year, index] = month.split('-').map(Number);
+  const first = new Date(year, index-1, 1);
+  const count = new Date(year, index, 0).getDate();
+  return Array.from({length:Math.ceil((first.getDay()+count)/7)*7}, (_, i) => {
+    const day = i-first.getDay()+1;
+    return day < 1 || day > count ? null : dateKey(new Date(year,index-1,day));
+  });
+}
+export function averageGrade(days, start, end) {
+  const graded = days.filter(day => day.date >= start && day.date <= end && typeof day.score === 'number' && Number.isFinite(day.score));
+  const score = graded.length ? Math.round(graded.reduce((sum,day)=>sum+day.score,0)/graded.length) : null;
+  return {score, letter:letterGrade(score), count:graded.length};
+}
+export function timeframeRange(period, month, today) {
+  const [year,index]=month.split('-').map(Number);
+  if(period==='month')return [`${month}-01`,dateKey(new Date(year,index,0))];
+  const end=new Date(`${today}T12:00:00`);
+  const start=new Date(end);
+  start.setDate(start.getDate()-(period==='7'?6:29));
+  return [dateKey(start),today];
+}

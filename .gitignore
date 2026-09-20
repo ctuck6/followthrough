@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.sqlite3
+node_modules/
+dist/
+.env
+.DS_Store
+
+backend/media/
+*.egg-info/
+backend/staticfiles/
+.pytest_cache/
+.ruff_cache/

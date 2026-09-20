@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "followthrough"
+version = "0.1.0"
+description = "A personal trading execution and rule-adherence journal"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "Django==5.2.17",
+  "asgiref==3.12.1",
+  "sqlparse==0.6.0",
+  "Pillow==12.3.0",
+]
+
+[project.optional-dependencies]
+production = ["gunicorn>=23,<24"]
+
+[tool.setuptools.packages.find]
+where = ["backend"]
+include = ["apps*", "config*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
