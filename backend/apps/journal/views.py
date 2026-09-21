@@ -77,3 +77,63 @@ def delete_attachment(request, day, attachment_id):
         return JsonResponse({"error": "The file could not be removed. Please try again."}, status=500)
 
     return HttpResponse(status=204)
+
+@require_http_methods(["GET", "POST"])
+def executions(request):
+    from . import executions as engine
+    try:
+        if request.method == 'GET': return JsonResponse(engine.ledger())
+        data = payload(request)
+        rows = engine.parse_csv(data['csv']) if 'csv' in data else [engine.normalize(data['execution'])]
+        if data.get('preview'):
+            new, duplicates = engine.inspect_batch(rows)
+            return JsonResponse({'rows':new,'duplicates':duplicates,'dates':sorted({r['session_date'] for r in rows})})
+        return JsonResponse({**engine.import_rows(rows),**engine.ledger()}, status=201)
+    except (ValueError, TypeError, KeyError, InvalidOperation) as exc:
+        return JsonResponse({'error':str(exc)},status=400)
+
+
+def trade_by_key(key):
+    from .executions import ledger
+    trade=next((t for t in ledger()['trades'] if t['trade_id']==key),None)
+    if trade is None: raise Http404('Trade not found')
+    return trade
+
+@require_http_methods(['GET','PUT'])
+def trade_journal(request, key):
+    from .models import TradeReview
+    from apps.core.validation import bounded_text
+    trade_by_key(key)
+    if request.method=='GET':
+        review=TradeReview.objects.filter(pk=key).first()
+        return JsonResponse({'notes':review.notes if review else ''})
+    try:
+        notes=bounded_text(payload(request).get('notes',''),20000)
+        TradeReview.objects.update_or_create(trade_key=key,defaults={'notes':notes})
+        return JsonResponse({'notes':notes})
+    except (ValueError,TypeError) as exc:return JsonResponse({'error':str(exc)},status=400)
+
+@require_http_methods(['GET','POST','DELETE'])
+def trade_attachments(request, key, attachment_id=None):
+    trade=trade_by_key(key)
+    try:
+        if request.method=='GET':
+            return JsonResponse({'attachments':[serialize_attachment(a) for a in Attachment.objects.filter(trade_key=key).order_by('created_at','id')]})
+        if request.method=='DELETE':
+            attachment=Attachment.objects.get(pk=attachment_id,trade_key=key)
+            services.delete_attachment(attachment.date,attachment.id,trade_key=key)
+            return JsonResponse({'deleted':True})
+        return JsonResponse(serialize_attachment(services.save_attachment(date.fromisoformat(trade['session_date']),request.FILES.get('file'),trade_key=key)),status=201)
+    except Attachment.DoesNotExist:raise Http404('Attachment not found for this trade')
+    except ValueError as exc:return JsonResponse({'error':str(exc)},status=400)
+
+
+@require_http_methods(['POST'])
+def manual_trade(request):
+    from .manual_trades import save_manual_trade
+    from .executions import ledger
+    try:
+        result=save_manual_trade(payload(request))
+        return JsonResponse({**result,**ledger()},status=201)
+    except (ValueError,TypeError,KeyError,InvalidOperation) as exc:
+        return JsonResponse({'error':str(exc)},status=400)

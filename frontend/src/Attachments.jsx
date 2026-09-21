@@ -1,14 +1,16 @@
 import React, {useEffect, useState, useRef} from 'react';
 import Modal from './components/Modal.jsx';
 
-export default function Attachments({date, csrfToken, notify}) {
+export default function Attachments({date, csrfToken, notify, tradeKey}) {
+  const base=tradeKey?`/api/trades/${tradeKey}/attachments/`:`/api/days/${date}/attachments/`;
+  const context=tradeKey?'this trade':date;
   const [items,setItems]=useState([]),[loading,setLoading]=useState(true),[uploading,setUploading]=useState(false),[error,setError]=useState('');
   const alive=useRef(true);
   const [preview,setPreview]=useState(null),[removing,setRemoving]=useState(null),[deleting,setDeleting]=useState(false),[deleteError,setDeleteError]=useState('');
   async function remove(){
     setDeleting(true);setDeleteError('');
     try{
-      const response=await fetch(`/api/days/${date}/attachments/${removing.id}/`,{method:'DELETE',headers:{'X-CSRFToken':csrfToken}});
+      const response=await fetch(`${base}${removing.id}/`,{method:'DELETE',headers:{'X-CSRFToken':csrfToken}});
       if(!response.ok){let message='Could not delete this attachment. Please try again.';try{message=(await response.json()).error||message}catch{}throw Error(message)}
       setItems(previous=>previous.filter(item=>item.id!==removing.id));setRemoving(null);notify(`Attachment deleted from ${date}.`);
     }catch(e){setDeleteError(e.message)}finally{setDeleting(false)}
@@ -16,12 +18,12 @@ export default function Attachments({date, csrfToken, notify}) {
   useEffect(()=>{
     alive.current=true;
     const controller=new AbortController();
-    fetch(`/api/days/${date}/attachments/`,{signal:controller.signal}).then(async response=>{
+    fetch(base,{signal:controller.signal}).then(async response=>{
       if(!response.ok)throw Error('Could not load attachments. Reopen this day to try again.');
       const result=await response.json();setItems(result.attachments);
     }).catch(e=>{if(e.name!=='AbortError')setError(e.message)}).finally(()=>{if(alive.current)setLoading(false)});
     return()=>{alive.current=false;controller.abort()};
-  },[date]);
+  },[date,tradeKey]);
   async function upload(event){
     const files=Array.from(event.target.files);event.target.value='';if(!files.length)return;
     setUploading(true);setError('');let saved=0;const failures=[];
@@ -29,7 +31,7 @@ export default function Attachments({date, csrfToken, notify}) {
       if(file.size===0||file.size>20*1024*1024){failures.push(`${file.name}: choose a nonempty file up to 20 MB.`);continue}
       try{
         const body=new FormData();body.append('file',file);
-        const response=await fetch(`/api/days/${date}/attachments/`,{method:'POST',headers:{'X-CSRFToken':csrfToken},body});
+        const response=await fetch(base,{method:'POST',headers:{'X-CSRFToken':csrfToken},body});
         if(!response.ok){let reason='Upload failed. Please try again.';try{reason=(await response.json()).error||reason}catch{}throw Error(reason)}
         const attachment=await response.json();saved++;
         if(alive.current)setItems(previous=>[...previous,attachment]);
@@ -38,9 +40,9 @@ export default function Attachments({date, csrfToken, notify}) {
     if(alive.current){setUploading(false);setError(failures.join(' '))}
     if(saved)notify(`${saved===1?'Attachment saved':`${saved} attachments saved`} for ${date}.`);
   }
-  return <section className="panel attachments-panel"><div className="panel-heading"><h2><span className="step">05</span> Session attachments</h2><span className="subtle">{items.length} files</span></div>
+  return <section className="panel attachments-panel"><div className="panel-heading"><h2>{!tradeKey&&<span className="step">05</span>} {tradeKey?'Trade attachments':'Session attachments'}</h2><span className="subtle">{items.length} files</span></div>
     <label className="attachment-upload">{uploading?'Uploading…':'Add chart photos or files'}<input type="file" multiple onChange={upload} disabled={uploading||loading} aria-label="Add chart photos or files"/></label>
-    <p className="footnote">Saved immediately to {date}. Up to 20 MB per file. Select an attachment to preview it. Some file types are available to download only.</p>
+    <p className="footnote">Saved immediately to {context}. Up to 20 MB per file. Select an attachment to preview it. Some file types are available to download only.</p>
     {error&&<p className="alert error" role="alert">{error}</p>}
     {loading?<p role="status">Loading attachments…</p>:items.length===0?<p className="attachment-empty">Keep your setups, entries and exits together. Add a chart screenshot to revisit this session later.</p>:<ul className="attachment-list">{items.map(item=><li className="attachment-row" key={item.id}>
       <button type="button" className="attachment-open" onClick={()=>setPreview(item)} aria-label={`View ${item.name}`}>
@@ -54,7 +56,7 @@ export default function Attachments({date, csrfToken, notify}) {
       <div className="modal-actions"><a className="download-link" href={preview.url} download={preview.name}>Download original</a><button type="button" onClick={()=>setPreview(null)}>Close</button></div>
     </Modal>}
     {removing&&<Modal title="Delete attachment?" onClose={()=>setRemoving(null)} busy={deleting} className="attachment-confirm">
-      <p>Delete <strong>{removing.name}</strong> from the session on {date}? This permanently removes the file and cannot be undone.</p>
+      <p>Delete <strong>{removing.name}</strong> from {context}? This permanently removes the file and cannot be undone.</p>
       {deleteError&&<p className="alert error" role="alert">{deleteError}</p>}
       <div className="modal-actions"><button type="button" autoFocus disabled={deleting} onClick={()=>setRemoving(null)}>Keep attachment</button><button type="button" className="danger-button" disabled={deleting} onClick={remove}>{deleting?'Deleting…':'Delete attachment'}</button></div>
     </Modal>}

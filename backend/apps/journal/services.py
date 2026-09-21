@@ -81,7 +81,7 @@ def save_day(parsed, data):
     return record
 
 
-def save_attachment(parsed, upload):
+def save_attachment(parsed, upload, trade_key=''):
     if not upload or upload.size > 20 * 1024 * 1024 or upload.size == 0:
         raise ValueError("Choose a nonempty file up to 20 MB.")
 
@@ -97,14 +97,14 @@ def save_attachment(parsed, upload):
 
     upload.seek(0)
     name = Path(upload.name).name[:255]
-    attachment = Attachment(date=parsed, name=name, content_type=mime)
+    attachment = Attachment(date=parsed, name=name, content_type=mime, trade_key=trade_key)
     attachment.file.save(uuid4().hex, upload, save=True)
 
     return attachment
 
 
-def delete_attachment(day, attachment_id):
+def delete_attachment(day, attachment_id, trade_key=''):
     with transaction.atomic():
-        attachment = Attachment.objects.select_for_update().get(pk=attachment_id, date=day)
+        attachment = Attachment.objects.select_for_update().get(pk=attachment_id, date=day, trade_key=trade_key)
         attachment.file.delete(save=False)
         attachment.delete()

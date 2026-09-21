@@ -169,3 +169,33 @@ The daily header shows Reviewed once every rule has been assessed (Followed, Bro
 Manual, CSV import, and the future Broker sync mode share one session trade list. CSV imports append to the open day and autosave. Required headers: symbol (or ticker), side (or direction; Long/Short), pnl (or net pnl). Optional notes and date columns are supported; dates must match the active day in YYYY-MM-DD format. P&L uses plain decimal numbers with up to two decimal places, without currency symbols or thousands separators. Files are limited to 2 MB and 500 trades per day. A validated preview requires Add trades before anything is appended. Re-importing can create duplicates; no broker-specific deduplication is implemented. Broker sync is a placeholder only.
 
 Calendar replaces the removed History page. Dates and timeframe options open in anchored popovers. Photo/deletion modals lock background scrolling and restore it when closed.
+
+### Execution imports and FIFO
+
+Trade journal supports IBKR execution CSV previews and stock/option manual fills.
+TradeID is unique across all uploads. Conflicting duplicate IDs reject the entire
+batch. TradeDate determines the journal session; Date/Time determines FIFO order
+(OrderTime is the default table sort). Times are preserved as broker-local values.
+FIFO lots span sessions and are separated by account, currency and instrument.
+Net realized P&L allocates signed opening and closing commissions; open-position
+fees carry until closing. Missing opening fills marked CLOSE show incomplete P&L.
+Exports without O/C codes assume an initially flat account. Import full history
+for reliable basis. Options use their supplied multiplier. Assignment, exercise,
+splits, cancellations and FX conversion require separate reconciliation and are
+not modeled as ordinary fills. No unrealized market valuation is calculated.
+Manual drafts are kept per day in browser storage; submitted fills save to SQLite
+immediately. Existing manually entered P&L remains separate from the new ledger.
+
+### Trade review
+
+Session rows group fills by account, currency, instrument and option contract,
+from the first entry until the position returns to zero. Scale-ins and partial
+exits remain one trade; a later re-entry starts another. A reversal closes the
+old trade and starts a new one. Trades appear in every session with activity.
+The day summary reports realized P&L for that day; trade details report the
+whole trade. Open trades show `(Open)` in the row's P&L columns.
+
+Click a trade (or focus it and press Enter) to view aggregated details, its
+journal, and its attachments. Notes autosave after three seconds and save before
+the modal closes; Save is also available. Trade attachments save immediately
+and remain separate from session attachments.

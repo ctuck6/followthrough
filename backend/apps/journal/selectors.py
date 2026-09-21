@@ -6,7 +6,7 @@ def journal_state():
             "days": [serialize(day) for day in Day.objects.order_by("-date")]}
 
 def attachments_for_day(day):
-    return [serialize_attachment(item) for item in Attachment.objects.filter(date=day).order_by("created_at", "id")]
+    return [serialize_attachment(item) for item in Attachment.objects.filter(date=day, trade_key='').order_by("created_at", "id")]
 
 def attachment_by_id(attachment_id):
     return Attachment.objects.get(pk=attachment_id)
