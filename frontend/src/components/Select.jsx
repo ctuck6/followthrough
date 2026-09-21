@@ -1,14 +1,19 @@
-import React, {useRef,useState} from 'react';
+import React,{useEffect,useId,useRef,useState} from 'react';
 import Popover from './Popover.jsx';
 import './Select.css';
-
-/** Shared native dropdown: retains keyboard support, labels and form behavior. */
-export default function Select({children, className = '', wrapperClassName = '', popover=false, ...props}) {
-  const [open,setOpen]=useState(false),anchor=useRef(null);
-  const options=React.Children.toArray(children);
-  if(popover)return <span className={`select-control ${wrapperClassName}`}><button ref={anchor} type="button" className={`select-input select-trigger ${className}`} aria-label={props['aria-label']} aria-haspopup="dialog" aria-expanded={open} disabled={props.disabled} onClick={()=>setOpen(!open)}>{options.find(option=>String(option.props.value)===String(props.value))?.props.children}</button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>{open&&<Popover anchor={anchor} label={props['aria-label']||'Choose an option'} className="options-popover" onClose={()=>setOpen(false)}>{options.map((option,i)=><button type="button" key={option.key} aria-pressed={String(option.props.value)===String(props.value)} onKeyDown={e=>{if(['ArrowDown','ArrowUp'].includes(e.key)){e.preventDefault();const nodes=e.currentTarget.parentElement.querySelectorAll('button');nodes[(i+(e.key==='ArrowDown'?1:-1)+nodes.length)%nodes.length].focus()}}} onClick={()=>{props.onChange({target:{value:option.props.value}});setOpen(false);anchor.current.focus()}}>{option.props.children}</button>)}</Popover>}</span>;
-  return <span className={`select-control ${wrapperClassName}`}>
-    <select {...props} className={`select-input ${className}`}>{children}</select>
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m7 10 5 5 5-5"/></svg>
-  </span>;
+export default function Select({children,className='',wrapperClassName='',popover:unused,...props}){
+ const [open,setOpen]=useState(false),[label,setLabel]=useState('');const anchor=useRef(null),listId=useId(),search=useRef(''),timer=useRef(null);
+ const options=React.Children.toArray(children).filter(React.isValidElement).map(o=>({value:String(o.props.value??o.props.children),text:o.props.children,disabled:o.props.disabled}));
+ const selected=options.find(o=>o.value===String(props.value));
+ useEffect(()=>{const parent=anchor.current?.closest('label');if(parent){const clone=parent.cloneNode(true);clone.querySelectorAll('.select-control').forEach(n=>n.remove());setLabel(clone.textContent.trim())}},[]);
+ useEffect(()=>()=>clearTimeout(timer.current),[]);
+ function choose(option){if(option.disabled)return;props.onChange?.({target:{value:option.value,name:props.name}});setOpen(false);anchor.current?.focus()}
+ function keyboard(e){const buttons=Array.from(e.currentTarget.parentElement.querySelectorAll('[role="option"]:not(:disabled)'));let index=buttons.indexOf(e.currentTarget);
+ if(['ArrowDown','ArrowUp','Home','End'].includes(e.key)){e.preventDefault();index=e.key==='Home'?0:e.key==='End'?buttons.length-1:(index+(e.key==='ArrowDown'?1:-1)+buttons.length)%buttons.length;buttons[index]?.focus()}
+ else if(e.key.length===1&&e.key!==' '){search.current+=e.key.toLowerCase();clearTimeout(timer.current);timer.current=setTimeout(()=>{search.current=''},600);buttons.find(b=>b.textContent.toLowerCase().startsWith(search.current))?.focus()}}
+ return <span className={`select-control ${wrapperClassName}`}>
+ <button ref={anchor} id={props.id} name={props.name} type="button" role="combobox" className={`select-input select-trigger ${className}`} aria-label={props['aria-label']||label||undefined} aria-labelledby={props['aria-labelledby']} aria-haspopup="listbox" aria-controls={open?listId:undefined} aria-expanded={open} disabled={props.disabled} onBlur={props.onBlur} onClick={()=>setOpen(!open)} onKeyDown={e=>{if(['ArrowDown','ArrowUp'].includes(e.key)){e.preventDefault();setOpen(true)}}}>{selected?.text||'Select'}</button>
+ <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>
+ {open&&<Popover anchor={anchor} label={props['aria-label']||label||'Choose an option'} className="options-popover" onClose={()=>setOpen(false)}><div role="listbox" id={listId} aria-label={props['aria-label']||label||'Options'}>{options.map(o=><button type="button" role="option" aria-selected={o.value===String(props.value)} aria-pressed={o.value===String(props.value)} key={o.value} disabled={o.disabled} onKeyDown={keyboard} onClick={()=>choose(o)}>{o.text}<span aria-hidden="true">{o.value===String(props.value)?'✓':''}</span></button>)}</div></Popover>}
+ </span>
 }

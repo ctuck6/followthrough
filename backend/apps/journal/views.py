@@ -137,3 +137,13 @@ def manual_trade(request):
         return JsonResponse({**result,**ledger()},status=201)
     except (ValueError,TypeError,KeyError,InvalidOperation) as exc:
         return JsonResponse({'error':str(exc)},status=400)
+
+@require_http_methods(['POST'])
+def manual_execution(request):
+    from .manual_trades import save_manual_execution
+    from .executions import ledger
+    try:
+        result=save_manual_execution(payload(request))
+        return JsonResponse({**result,**ledger()},status=201)
+    except (ValueError,TypeError,KeyError,InvalidOperation) as exc:
+        return JsonResponse({'error':str(exc)},status=400)

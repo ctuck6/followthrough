@@ -1,7 +1,7 @@
 .select-control{position:relative;display:inline-flex;width:100%;min-width:0;vertical-align:middle}
-.select-control select.select-input{appearance:none;-webkit-appearance:none;width:100%;min-height:44px;margin:0;padding:10px 42px 10px 16px;border-radius:22px;font-size:.875rem;line-height:1.5;cursor:pointer}
+.select-control .select-input{appearance:none;-webkit-appearance:none;width:100%;min-height:44px;margin:0;padding:10px 42px 10px 16px;border-radius:22px;font-size:.875rem;line-height:1.5;cursor:pointer}
 .select-control>svg{position:absolute;right:16px;top:50%;transform:translateY(-50%);width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
 label>.select-control{margin-top:8px}
-.select-control:has(select:disabled){opacity:.6}
-.select-control select:disabled{cursor:not-allowed}
+.select-control:has(.select-input:disabled){opacity:.6}
+.select-control .select-input:disabled{cursor:not-allowed}
 .rule-row .select-control{width:172px;flex-shrink:0;margin-left:auto}

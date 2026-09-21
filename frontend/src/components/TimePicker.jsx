@@ -1,0 +1,7 @@
+import React,{useRef,useState} from 'react';
+import Popover from './Popover.jsx';
+export default function TimePicker({value,onChange,label='Time',disabled=false}){
+ const anchor=useRef(null),[open,setOpen]=useState(false),[draft,setDraft]=useState(value);
+ const parts=draft.split(':');
+ return <><button ref={anchor} type="button" className="time-picker-trigger" aria-label={`${label}: ${value}`} aria-haspopup="dialog" aria-expanded={open} disabled={disabled} onClick={()=>{setDraft(value);setOpen(!open)}}><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>{value}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></button>{open&&<Popover anchor={anchor} label={label} className="time-picker-popover" onClose={()=>setOpen(false)}><div className="time-picker-fields">{['Hour','Minute','Second'].map((name,i)=><label key={name}>{name}<input aria-label={name} type="number" min="0" max={i?59:23} value={parts[i]??'00'} onChange={e=>{const next=[...parts];next[i]=e.target.value;setDraft(next.join(':'))}}/></label>)}</div><div className="picker-footer"><button type="button" onClick={()=>setOpen(false)}>Cancel</button><button type="button" disabled={parts.length!==3||parts.some((p,i)=>p===''||!/^\d{1,2}$/.test(p)||Number(p)>(i?59:23))} onClick={()=>{onChange(parts.map(p=>p.padStart(2,'0')).join(':'));setOpen(false);anchor.current?.focus()}}>Apply</button></div></Popover>}</>
+}

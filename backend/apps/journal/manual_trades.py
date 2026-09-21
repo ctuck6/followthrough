@@ -33,3 +33,20 @@ def save_manual_trade(data):
         exit['manual_group']=identifier
         rows.append(exit)
     return import_rows(rows)
+
+
+def save_manual_execution(data):
+    identifier=str(UUID(data['id']))
+    fees=Decimal(number(data.get('commission',0),'Commissions'))
+    if fees<0:raise ValueError('Enter commissions as a positive cost.')
+    first=Execution.objects.order_by('created_at').first()
+    row=normalize({'TradeID':f'manual-fill-{identifier}',
+        'ClientAccountID':first.data['account'] if first else 'Personal',
+        'AccountAlias':first.data['account_alias'] if first else 'Personal',
+        'CurrencyPrimary':first.data['currency'] if first else 'USD',
+        'AssetClass':data['asset'],'UnderlyingSymbol':data['symbol'],'Buy/Sell':data['side'],
+        'Quantity':data['quantity'],'Price':data['price'],'Commission':str(-fees),
+        'OrderTime':data['executed_at'],'Multiplier':data.get('multiplier',1),
+        'Strike':data.get('strike',''),'Expiry':data.get('expiry',''),'Put/Call':data.get('put_call',''),
+        'PositionEffect':'AUTO'})
+    return import_rows([row])

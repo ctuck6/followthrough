@@ -42,7 +42,7 @@ export default function Attachments({date, csrfToken, notify, tradeKey}) {
   }
   return <section className="panel attachments-panel"><div className="panel-heading"><h2>{!tradeKey&&<span className="step">05</span>} {tradeKey?'Trade attachments':'Session attachments'}</h2><span className="subtle">{items.length} files</span></div>
     <label className="attachment-upload">{uploading?'Uploading…':'Add chart photos or files'}<input type="file" multiple onChange={upload} disabled={uploading||loading} aria-label="Add chart photos or files"/></label>
-    <p className="footnote">Saved immediately to {context}. Up to 20 MB per file. Select an attachment to preview it. Some file types are available to download only.</p>
+    <p className="footnote">Up to 20 MB per file. Select an attachment to preview it. Some file types are available to download only.</p>
     {error&&<p className="alert error" role="alert">{error}</p>}
     {loading?<p role="status">Loading attachments…</p>:items.length===0?<p className="attachment-empty">Keep your setups, entries and exits together. Add a chart screenshot to revisit this session later.</p>:<ul className="attachment-list">{items.map(item=><li className="attachment-row" key={item.id}>
       <button type="button" className="attachment-open" onClick={()=>setPreview(item)} aria-label={`View ${item.name}`}>

@@ -22,3 +22,33 @@ export function timeframeRange(period, month, today) {
   start.setDate(start.getDate()-(period==='7'?6:29));
   return [dateKey(start),today];
 }
+
+export function presetRange(period,today){
+ const end=new Date(`${today}T12:00:00`),start=new Date(end);
+ if(period==='week')start.setDate(start.getDate()-start.getDay());
+ if(period==='current-month')start.setDate(1);
+ if(period==='quarter'){start.setDate(1);start.setMonth(Math.floor(start.getMonth()/3)*3)}
+ if(period==='ytd'){start.setDate(1);start.setMonth(0)}
+ return [dateKey(start),today];
+}
+export function selectRangeDate(start,end,date,today){
+ if(date>today||(!end&&start&&date<start))return [start,end];
+ return !start||end?[date,'']:[start,date];
+}
+
+export const fullyReviewed = day => Boolean(day?.checks?.length && day.checks.every(check => ['followed','broken','na'].includes(check.status)));
+export function consistencyStreak(days,today){
+ const reviewed=new Set(days.filter(fullyReviewed).map(day=>day.date));
+ const cursor=new Date(`${today}T12:00:00`);
+ const weekday=()=>cursor.getDay()!==0&&cursor.getDay()!==6;
+ if(weekday()&&!reviewed.has(today))cursor.setDate(cursor.getDate()-1);
+ let streak=0;
+ while(true){
+  if(weekday()){
+   if(!reviewed.has(dateKey(cursor)))break;
+   streak++;
+  }
+  cursor.setDate(cursor.getDate()-1);
+ }
+ return streak;
+}

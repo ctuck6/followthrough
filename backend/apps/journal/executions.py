@@ -99,7 +99,9 @@ def import_rows(rows):
 
 def ledger():
     books=defaultdict(deque);result=[];summaries={}
-    for model in Execution.objects.order_by('execution_time','trade_id'):
+    # Manual fills at the same timestamp keep their submission order.
+    ordered=sorted(Execution.objects.all(),key=lambda item:(item.execution_time,(1,item.pk) if item.trade_id.startswith('manual-') else (0,item.trade_id)))
+    for model in ordered:
         row=dict(model.data);qty=D(row['quantity']);remaining=qty;sign=1 if row['side']=='BUY' else -1
         key=tuple(row[field] for field in ('account','currency','asset_class','symbol','expiry','strike','put_call','multiplier'))+(row.get('manual_group',''),)
         lots=books[key];gross=D(0);fees=D(0);matched=D(0);incomplete=False
