@@ -230,3 +230,41 @@ Each Git command has a 30-second timeout and credential prompts are disabled.
 Commit local development changes before expecting automatic updates to apply.
 This step updates source code only: releases that change dependencies or database
 schema still require the corresponding install/migration commands.
+
+### Trade charts
+
+Enter your Twelve Data key in `backend/.env` as `TWELVE_DATA_API_KEY=your_key`.
+This file is Git-ignored; never put the key in a frontend variable. The backend
+reads it on each chart request, so changing the key does not require a restart.
+`TRADING_TIMEZONE=America/Los_Angeles` interprets the CSV's timezone-free execution
+timestamps. Change this IANA timezone if your export uses another local timezone.
+
+Opening a trade modal loads TradingView Lightweight Charts and requests one-minute
+candles for its first execution date. Multi-day trades have a session selector.
+No market-data requests occur on the calendar or daily review list. Minute candles
+are requested in UTC and displayed in the configured local timezone, accounting
+for daylight saving time. Markers are placed only on the exact execution minute;
+hover that minute for the original fill time and price. Missing candle minutes are
+reported instead of snapping fills to unrelated candles.
+
+`backend/chart_cache.sqlite3` contains only market-data cache/rate accounting;
+the journal database is unchanged. Settled sessions cache for 30 days, recent or
+empty sessions for five minutes. The app enforces at most eight uncached requests
+per rolling minute and 800 per rolling day across both local servers. Other apps
+using your key can still exhaust the provider quota. Cached candles are shared by
+trades using the same ticker, currency, date and timezone. Only ticker and date
+range are sent to Twelve Data; journals, account details, quantities and fill prices
+stay local. The standard feed may not have every minute or extended-hours data.
+
+Stock candles and option-underlying candles are implemented. Twelve Data's SDK
+marks its options endpoints deprecated; no supported historical option-contract
+candle source has been configured. The contract section explicitly reports this
+limitation; it does not substitute stock candles or manufacture option prices.
+Real provider access must be verified after entering your API key.
+
+Chart drawing tools: choose Level and click once, or choose Trendline/Rectangle
+and click two points on candles. Escape cancels an unfinished drawing. Cursor
+restores normal chart navigation. Undo/Redo also lets you recover cleared drawings
+within the current modal session. Drawings are anchored to candle times and prices
+and saved in this browser's local storage per trade and chart date; they are not
+stored in the journal database or shared between Chrome profiles.

@@ -1,7 +1,9 @@
 from django.urls import path
 from . import views
+from .charts import trade_chart
 
 urlpatterns = [
+    path("api/trades/<str:key>/chart/", trade_chart),
     path("api/rules/delete/", views.remove_rules),
     path("api/executions/delete/", views.remove_executions),
     path("api/profile/", views.profile),
