@@ -32,3 +32,10 @@ class Execution(models.Model):
 class TradeReview(models.Model):
     trade_key = models.CharField(max_length=64, primary_key=True)
     notes = models.TextField(blank=True)
+
+class Profile(models.Model):
+    display_name = models.CharField(max_length=100, blank=True)
+    bio = models.TextField(blank=True)
+
+class PendingFileDeletion(models.Model):
+    name = models.CharField(max_length=500, unique=True)

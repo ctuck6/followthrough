@@ -11,11 +11,12 @@ def group_trades(rows):
                  'direction': 'Long' if sign == 1 else 'Short', 'sessions': [],
                  'quantity': D(0), 'remaining': D(0), 'entry_value': D(0),
                  'exit_value': D(0), 'exit_quantity': D(0), 'gross': D(0), 'net': D(0),
-                 'commission': D(0), 'close_time': '', 'incomplete': False, 'fill_count': 0}
+                 'commission': D(0), 'close_time': '', 'incomplete': False, 'fill_count': 0, 'execution_ids': []}
         trades.append(trade)
         return trade
     def record(t, row, qty):
         t['fill_count'] += 1
+        if row['trade_id'] not in t['execution_ids']:t['execution_ids'].append(row['trade_id'])
         if row['session_date'] not in t['sessions']: t['sessions'].append(row['session_date'])
         t['commission'] += D(row['commission']) * qty / D(row['quantity'])
     for r in rows:

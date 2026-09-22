@@ -147,3 +147,41 @@ def manual_execution(request):
         return JsonResponse({**result,**ledger()},status=201)
     except (ValueError,TypeError,KeyError,InvalidOperation) as exc:
         return JsonResponse({'error':str(exc)},status=400)
+
+@require_http_methods(['GET', 'PUT'])
+def profile(request):
+    from .models import Profile
+    from apps.core.validation import bounded_text
+    if request.method == 'GET':
+        record = Profile.objects.filter(pk=1).first()
+        return JsonResponse({'display_name': record.display_name if record else '', 'bio': record.bio if record else ''})
+    try:
+        data = payload(request)
+        values = {'display_name': bounded_text(data.get('display_name', ''), 100), 'bio': bounded_text(data.get('bio', ''), 1000)}
+        Profile.objects.update_or_create(pk=1, defaults=values)
+        return JsonResponse(values)
+    except (ValueError, TypeError) as exc:
+        return JsonResponse({'error': str(exc)}, status=400)
+
+@require_http_methods(['DELETE'])
+def clear_trading_data(request):
+    from .settings_services import clear_trading_data as clear
+    try:
+        if payload(request).get('confirmation') != 'CLEAR_ALL_TRADE_AND_JOURNAL_DATA':
+            return JsonResponse({'error': 'Explicit confirmation is required.'}, status=400)
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Explicit confirmation is required.'}, status=400)
+    return JsonResponse(clear())
+
+
+@require_http_methods(['DELETE'])
+def remove_rules(request):
+    from .deletions import delete_rules
+    try:return JsonResponse(delete_rules(payload(request)))
+    except (ValueError,TypeError) as exc:return JsonResponse({'error':str(exc)},status=400)
+
+@require_http_methods(['DELETE'])
+def remove_executions(request):
+    from .deletions import delete_executions
+    try:return JsonResponse(delete_executions(payload(request)))
+    except (ValueError,TypeError) as exc:return JsonResponse({'error':str(exc)},status=400)

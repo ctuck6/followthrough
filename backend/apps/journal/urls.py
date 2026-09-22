@@ -2,6 +2,10 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    path("api/rules/delete/", views.remove_rules),
+    path("api/executions/delete/", views.remove_executions),
+    path("api/profile/", views.profile),
+    path("api/trading-data/", views.clear_trading_data),
     path("api/manual-executions/", views.manual_execution),
     path("api/manual-trades/", views.manual_trade),
     path("api/trades/<str:key>/journal/", views.trade_journal),
