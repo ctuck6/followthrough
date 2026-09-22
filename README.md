@@ -199,3 +199,34 @@ Click a trade (or focus it and press Enter) to view aggregated details, its
 journal, and its attachments. Notes autosave after three seconds and save before
 the modal closes; Save is also available. Trade attachments save immediately
 and remain separate from session attachments.
+
+### Desktop launcher (macOS)
+
+Double-click `~/Desktop/Followthrough.app` to open a dedicated Google Chrome
+application window. The launcher uses ports 5174 (Vite) and 8001 (Django), shares
+this project's database and attachments, and stops its own servers when the last
+window in its dedicated Chrome profile closes. Existing PyCharm servers and normal
+Chrome windows are unaffected. A second launch while running does not start
+additional servers. Chrome preferences for this window are separate from your
+normal browser profile.
+
+Launcher source: `scripts/desktop_launcher.py`. Runtime logs and the isolated
+Chrome profile live in `~/Library/Application Support/Followthrough/`.
+The installed app points to the current project path; update its
+`Contents/MacOS/Followthrough` script if you move the project. It uses the project's
+Python virtual environment and installed frontend dependencies. Node is located
+on PATH, in Homebrew, or in the existing Codex runtime.
+
+The desktop launcher is an explicitly requested exception to starting development
+servers in PyCharm. For normal development, continue using the PyCharm terminal tabs.
+
+On startup, the launcher checks the current branch's configured remote tracking
+branch (currently `origin/mainline`) and applies fast-forward updates before
+starting either server. It reloads its own code after an update. Uncommitted
+changes (including untracked source files), divergent history, missing credentials,
+and unavailable remotes leave the local version in place. Update results are
+recorded in `launcher.log`; no commits, stashes, resets, or pushes are performed.
+Each Git command has a 30-second timeout and credential prompts are disabled.
+Commit local development changes before expecting automatic updates to apply.
+This step updates source code only: releases that change dependencies or database
+schema still require the corresponding install/migration commands.
