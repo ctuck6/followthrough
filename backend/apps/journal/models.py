@@ -39,3 +39,15 @@ class Profile(models.Model):
 
 class PendingFileDeletion(models.Model):
     name = models.CharField(max_length=500, unique=True)
+
+
+class Strategy(models.Model):
+    name = models.CharField(max_length=100)
+    criteria = models.JSONField(default=list)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class TradeStrategy(models.Model):
+    trade_key = models.CharField(max_length=64, primary_key=True)
+    strategy = models.ForeignKey(Strategy, on_delete=models.CASCADE)
+    checked = models.JSONField(default=list)

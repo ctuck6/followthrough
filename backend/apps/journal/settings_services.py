@@ -1,5 +1,5 @@
 from django.db import transaction
-from .models import Attachment, Day, Execution, TradeReview, PendingFileDeletion
+from .models import TradeStrategy, Attachment, Day, Execution, TradeReview, PendingFileDeletion
 
 
 def clear_trading_data():
@@ -9,6 +9,7 @@ def clear_trading_data():
             PendingFileDeletion.objects.get_or_create(name=name)
         Attachment.objects.all().delete()
         TradeReview.objects.all().delete()
+        TradeStrategy.objects.all().delete()
         Execution.objects.all().delete()
         Day.objects.all().delete()
     storage = Attachment._meta.get_field('file').storage

@@ -1,5 +1,5 @@
 from django.db import transaction
-from .models import Execution, Rule, TradeReview, Attachment, PendingFileDeletion
+from .models import TradeStrategy, Execution, Rule, TradeReview, Attachment, PendingFileDeletion
 from .executions import ledger
 
 
@@ -34,6 +34,11 @@ def delete_executions(data):
             key=old['trade_id']
             if new and new['trade_id']==key:continue
             review=TradeReview.objects.filter(pk=key).first()
+            assignment = TradeStrategy.objects.filter(pk=key).first()
+            if assignment:
+                if new and not TradeStrategy.objects.filter(pk=new['trade_id']).exists():
+                    TradeStrategy.objects.create(trade_key=new['trade_id'], strategy_id=assignment.strategy_id, checked=assignment.checked)
+                assignment.delete()
             if new:
                 target=new['trade_id']
                 if review:

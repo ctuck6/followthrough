@@ -1,8 +1,9 @@
+import PerformanceCards from './PerformanceCards.jsx';
 import RangePicker, {rangePresets} from './components/RangePicker.jsx';
 import React, {useState} from 'react';
 import {averageGrade, dateKey, monthCells, presetRange, consistencyStreak, fullyReviewed} from './calendar.js';
 
-export default function Calendar({days, summaries={}, today, onOpen}) {
+export default function Calendar({days, trades=[], summaries={}, today, onOpen}) {
   const [month,setMonth]=useState(today.slice(0,7));
   const [period,setPeriod]=useState('current-month');
   const [custom,setCustom]=useState([today.slice(0,7)+'-01',today]);
@@ -20,6 +21,7 @@ export default function Calendar({days, summaries={}, today, onOpen}) {
       <div className="range-controls"><span className="field-label">Average timeframe</span><button type="button" className="date-picker-trigger" aria-haspopup="dialog" aria-label="Choose average timeframe" onClick={()=>setPickerOpen(true)}>{period==='custom'?'Custom range':rangePresets.find(([key])=>key===period)?.[1]} <svg className="date-picker-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></button><small>{start} → {end}</small></div>
       {pickerOpen&&<RangePicker value={[start,end]} period={period} today={today} onClose={()=>setPickerOpen(false)} onApply={(range,key)=>{setCustom(range);setPeriod(key);setPickerOpen(false)}}/>}
     </section>
+    <PerformanceCards trades={trades} summaries={summaries} start={start} end={end} includePnl average/>
     <section className="panel calendar-panel" aria-label="Monthly grade calendar"><div className="calendar-toolbar"><h2 aria-live="polite">{title}</h2><div className="month-controls"><button aria-label="Previous month" onClick={()=>move(-1)}>←</button><button onClick={()=>setMonth(today.slice(0,7))}>This month</button><button aria-label="Next month" onClick={()=>move(1)}>→</button></div></div>
       <div className="calendar-grid">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=><div className="weekday" key={d}>{d}</div>)}{monthCells(month).map((date,i)=>{
         if(!date)return <div key={`empty-${i}`} className="calendar-spacer" aria-hidden="true"/>;

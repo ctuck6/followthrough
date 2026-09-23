@@ -22,5 +22,5 @@ export default function Popover({anchor, label, children, onClose, className=''}
     window.addEventListener('resize',position);window.addEventListener('scroll',position,true);
     return()=>{document.removeEventListener('pointerdown',outside);document.removeEventListener('keydown',escape);document.removeEventListener('focusin',outside);window.removeEventListener('resize',position);window.removeEventListener('scroll',position,true);panel.hidePopover()};
   },[]);
-  return createPortal(<PopoverParents.Provider value={[...parents,id]}><div data-popover-parents={parents.join(' ')} ref={ref} popover="manual" role="dialog" aria-label={label} className={`anchored-popover ${className}`}>{children}</div></PopoverParents.Provider>,document.body);
+  return createPortal(<PopoverParents.Provider value={[...parents,id]}><div data-popover-parents={parents.join(' ')} ref={ref} popover="manual" role="dialog" aria-label={label} className={`anchored-popover ${className}`}>{children}</div></PopoverParents.Provider>,anchor.current?.closest('dialog')||document.body);
 }
