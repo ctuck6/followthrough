@@ -1,4 +1,5 @@
 """Execution import and decimal FIFO accounting, independent of display sorting."""
+import re
 import csv
 import io
 from collections import defaultdict, deque
@@ -30,9 +31,12 @@ def normalize(row):
     tid=text('TradeID')
     if not tid or len(tid)>100: raise ValueError('TradeID is required (up to 100 characters).')
     asset=text('AssetClass').upper()
-    if asset not in ('STK','OPT'): raise ValueError('Only STK and OPT are supported.')
+    if asset not in ('STK','OPT','FUT'): raise ValueError('Only STK, OPT and FUT are supported.')
     symbol=text('UnderlyingSymbol') or text('UnderlyingSymbo') or text('Symbol')
     if not symbol: raise ValueError('UnderlyingSymbol or Symbol is required.')
+    if asset=='FUT':
+        symbol=text('Symbol') or symbol
+        if not text('Expiry') and not re.search(r'[FGHJKMNQUVXZ]\d{1,4}(?::[A-Z]+)?$',symbol): raise ValueError('Futures require a dated contract symbol or Expiry.')
     account=text('ClientAccountID') or text('AccountAlias')
     if not account: raise ValueError('AccountAlias or ClientAccountID is required.')
     currency=text('CurrencyPrimary').upper()
@@ -42,9 +46,9 @@ def normalize(row):
     if side not in ('BUY','SELL'): raise ValueError('Buy/Sell must be BUY or SELL.')
     quantity=abs(D(number(row.get('Quantity',''),'Quantity')))
     if not quantity: raise ValueError('Quantity must not be zero.')
-    if asset=='OPT' and quantity!=quantity.to_integral_value(): raise ValueError('Option quantity must be whole contracts.')
+    if asset in ('OPT','FUT') and quantity!=quantity.to_integral_value(): raise ValueError('Contract quantity must be whole contracts.')
     price=number(row.get('Price',''),'Price')
-    if D(price)<0: raise ValueError('Price must not be negative.')
+    if asset!='FUT' and D(price)<0: raise ValueError('Price must not be negative.')
     multiplier=number(row.get('Multiplier',1 if asset=='STK' else ''),'Multiplier',True)
     order=stamp(text('OrderTime'),'OrderTime'); execution=stamp(text('Date/Time',order),'Date/Time')
     session=date.fromisoformat(text('TradeDate',execution[:10])).isoformat()
@@ -55,6 +59,7 @@ def normalize(row):
     if text('TransactionType','ExchTrade') not in ('ExchTrade','Trade'): raise ValueError('Corrections, cancellations and non-trade events require reconciliation.')
     if text('LevelOfDetail','EXECUTION')!='EXECUTION': raise ValueError('Import EXECUTION-level rows only.')
     expiry=strike=put_call=''
+    if asset=='FUT' and text('Expiry'): expiry=date.fromisoformat(text('Expiry')).isoformat()
     if asset=='OPT':
         expiry=date.fromisoformat(text('Expiry')).isoformat();strike=number(row.get('Strike',''),'Strike',True);put_call=text('Put/Call').upper()
         if put_call not in ('P','C'): raise ValueError('Put/Call must be P or C.')

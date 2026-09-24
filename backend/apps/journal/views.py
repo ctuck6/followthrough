@@ -84,11 +84,20 @@ def executions(request):
     try:
         if request.method == 'GET': return JsonResponse(engine.ledger())
         data = payload(request)
-        rows = engine.parse_csv(data['csv']) if 'csv' in data else [engine.normalize(data['execution'])]
+        from .accounts import prepare_import, record_import
+        from django.db import transaction
+        rows, account = prepare_import(data) if 'csv' in data else ([engine.normalize(data['execution'])], None)
         if data.get('preview'):
             new, duplicates = engine.inspect_batch(rows)
-            return JsonResponse({'rows':new,'duplicates':duplicates,'dates':sorted({r['session_date'] for r in rows})})
-        return JsonResponse({**engine.import_rows(rows),**engine.ledger()}, status=201)
+            return JsonResponse({'rows':new,'duplicates':duplicates,'warnings':getattr(rows,'warnings',[]),'dates':sorted({r['session_date'] for r in rows})})
+        with transaction.atomic():
+            if 'csv' in data:
+                from .models import BrokerageAccount
+                BrokerageAccount.objects.filter(pk=-1).update(name='')
+                rows, account = prepare_import(data)
+            result = engine.import_rows(rows)
+            record_import(account, rows)
+        return JsonResponse({**result,**engine.ledger()}, status=201)
     except (ValueError, TypeError, KeyError, InvalidOperation) as exc:
         return JsonResponse({'error':str(exc)},status=400)
 

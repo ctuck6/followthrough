@@ -2,10 +2,12 @@ from django.urls import path
 from . import views
 from .charts import trade_chart
 from .statistics import statistics
+from .accounts import accounts
 
 from .strategies import strategies, trade_strategy, strategy_detail
 
 urlpatterns = [
+    path("api/accounts/", accounts),
     path("api/statistics/", statistics),
     path("api/strategies/", strategies),
     path("api/strategies/<int:pk>/", strategy_detail),

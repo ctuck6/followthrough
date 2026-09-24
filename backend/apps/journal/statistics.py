@@ -45,7 +45,11 @@ def statistics(request: HttpRequest) -> JsonResponse:
                 "net": str(Decimal(trade["net"])),
                 "currency": trade["currency"],
                 "ticker": trade["symbol"],
-                "instrument": "Options" if trade["asset_class"] == "OPT" else "Stocks",
+                "instrument": "Futures"
+                if trade["asset_class"] == "FUT"
+                else "Options"
+                if trade["asset_class"] == "OPT"
+                else "Stocks",
                 "hour": hour,
                 "strategy": links.get(trade["trade_id"], "No strategy"),
             }

@@ -108,6 +108,7 @@ def main() -> None:
         port_file.unlink(missing_ok=True)
         env = dict(os.environ, FOLLOWTHROUGH_BACKEND='http://127.0.0.1:8001')
         with (STATE / 'launcher.log').open('a') as log:
+            subprocess.run([str(ROOT / 'backend/.venv/bin/python'), 'manage.py', 'migrate', '--noinput', '--settings=config.settings.desktop'], cwd=ROOT / 'backend', env=env, stdout=log, stderr=log, check=True)
             backend = launch([
                 str(ROOT / 'backend/.venv/bin/python'), 'manage.py', 'runserver',
                 '127.0.0.1:8001', '--noreload', '--settings=config.settings.desktop',
@@ -122,6 +123,7 @@ def main() -> None:
                     raise RuntimeError('A server could not start. See launcher.log.')
                 try:
                     fetch('http://127.0.0.1:8001/api/state/')
+                    fetch('http://127.0.0.1:8001/api/accounts/')
                     fetch(URL)
                     break
                 except (OSError, urllib.error.URLError):

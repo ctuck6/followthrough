@@ -51,3 +51,11 @@ class TradeStrategy(models.Model):
     trade_key = models.CharField(max_length=64, primary_key=True)
     strategy = models.ForeignKey(Strategy, on_delete=models.CASCADE)
     checked = models.JSONField(default=list)
+
+
+class BrokerageAccount(models.Model):
+    name = models.CharField(max_length=100)
+    broker = models.CharField(max_length=20, choices=[('ibkr', 'Interactive Brokers'), ('schwab', 'Charles Schwab')])
+    source_identifier = models.CharField(max_length=150, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_import_at = models.DateTimeField(null=True, blank=True)
