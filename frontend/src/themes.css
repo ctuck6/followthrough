@@ -1,0 +1,32 @@
+/* Shared palette tokens apply to every appearance mode. */
+:root{--hover:color-mix(in srgb,var(--accent) 9%,var(--surface))}
+aside{background:var(--sidebar)}
+.mark,nav button.active,nav button.active:hover{background:var(--nav-active);color:var(--sidebar)}
+nav button:hover{background:color-mix(in srgb,var(--nav-active) 12%,var(--sidebar))}
+:root .primary{background:var(--accent);border-color:var(--accent);color:var(--canvas)}
+:root .primary:hover{background:color-mix(in srgb,var(--accent) 85%,var(--ink))}
+:root .stats .grade-stat,:root .step,:root .grade-badge{background:var(--accent-soft);color:var(--accent)}
+:root .positive,:root .trade-pnl-hero.is-gain>strong{color:var(--pnl-positive)}
+:root .negative,:root .performance-value.is-loss,:root .trade-pnl-hero.is-loss>strong{color:var(--pnl-negative)}
+:root .trade-pnl-hero.is-gain{border-left-color:var(--pnl-positive);background:linear-gradient(110deg,color-mix(in srgb,var(--pnl-positive) 12%,var(--surface)),var(--surface))}
+:root .trade-pnl-hero.is-loss{border-left-color:var(--pnl-negative);background:linear-gradient(110deg,color-mix(in srgb,var(--pnl-negative) 12%,var(--surface)),var(--surface))}
+:root button:focus-visible,:root input:focus-visible,:root textarea:focus-visible,:root a:focus-visible{outline-color:var(--accent)}
+:root .track{background:var(--accent-soft)}
+:root .track div{background:var(--accent)}
+:root .grade-key strong{color:var(--accent)}
+:root .calendar-day.in-range{border-color:var(--accent)}
+.theme-picker{margin:24px 10px 0;color:var(--ink)}
+.theme-picker .select-trigger{background:var(--surface)}
+.theme-mode{display:flex;gap:4px;margin-top:8px;padding:3px;border-radius:22px;background:var(--surface)}
+.theme-mode button{flex:1;border:0;border-radius:20px;background:transparent;color:var(--muted);padding:7px 8px;font-size:.75rem}
+.theme-mode button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
+.theme-choice{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%}
+.theme-preview{width:76px;height:46px;flex-shrink:0;border:1px solid var(--line);border-radius:6px}
+@media(max-width:700px){.theme-picker{max-width:240px;margin:16px 0 0}}
+
+/* P&L semantics stay identical across all palettes. */
+:root{--pnl-positive:#c9233e;--pnl-negative:#087c42}
+:root[data-theme="dark"]{--pnl-positive:#ff526b;--pnl-negative:#36e589}
+:root .is-gain,:root .report-gain,:root .positive,:root .performance-value.is-gain{color:var(--pnl-positive)}
+:root .is-loss,:root .report-loss,:root .negative{color:var(--pnl-negative)}
+:root .daily-pnl-value .pnl-trend{color:inherit}
