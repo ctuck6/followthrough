@@ -1,3 +1,4 @@
+import AccountScope, {AccountSwitcher, useAccount} from './AccountScope.jsx';
 import Statistics from './Statistics.jsx';
 import PerformanceCards from './PerformanceCards.jsx';
 import {ruleFollowing} from './performance.js';
@@ -29,26 +30,32 @@ function NavIcon({index}) {
  return <svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true">{shapes[index]}</svg>;
 }
 function App(){
+ const {accountId}=useAccount();
+ const [tab,setTab]=useState('Daily review'),[selectedDate,setSelectedDate]=useState(today);
+ return <Workspace key={accountId} tab={tab} setTab={setTab} selectedDate={selectedDate} setSelectedDate={setSelectedDate}/>;
+}
+function Workspace({tab,setTab,selectedDate,setSelectedDate}){
+ const {accountId,scopedFetch,beforeSwitch,refreshAccounts}=useAccount();
  const [theme,setTheme]=useState(()=>{try{return localStorage.getItem('followthrough-theme')==='dark'?'dark':'light'}catch{return 'light'}});
  useEffect(()=>{document.documentElement.dataset.theme=theme;try{localStorage.setItem('followthrough-theme',theme)}catch{}},[theme]);
- const [data,setData]=useState(null),[day,setDay]=useState(null),[tab,setTab]=useState('Daily review'),[dirty,setDirty]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[error,setError]=useState('');
+ const [data,setData]=useState(null),[day,setDay]=useState(null),[dirty,setDirty]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[error,setError]=useState('');
  const [rule,setRule]=useState({text:'',weight:1}),[trade,setTrade]=useState({symbol:'',side:'Long',pnl:'',notes:''});
  const clearing=useRef(false);
  const current=useRef(null), revision=useRef(0), savedRevision=useRef(0), pending=useRef(null), saveLatest=useRef(null);
  const [noticeId,setNoticeId]=useState(0);
  const [ledger,setLedger]=useState({executions:[],summaries:{},open_lots:[]});
- useEffect(()=>{fetch('/api/executions/').then(r=>{if(!r.ok)throw Error('Could not load executions.');return r.json()}).then(setLedger).catch(e=>setError(e.message))},[]);
+ useEffect(()=>{scopedFetch('/api/executions/').then(r=>{if(!r.ok)throw Error('Could not load executions.');return r.json()}).then(setLedger).catch(e=>setError(e.message))},[]);
  async function updatedLedger(result,dates){
   setLedger(result);
   if(pending.current&&!await pending.current)return;
   while(revision.current!==savedRevision.current){if(!await save('auto'))return}
-  const response=await fetch('/api/state/');if(!response.ok)throw Error('Executions saved. Reload to refresh session dates.');
+  const response=await scopedFetch('/api/state/');if(!response.ok)throw Error('Executions saved. Reload to refresh session dates.');
   const fresh=await response.json();setData(fresh);
   const target=dates?.includes(current.current.date)?current.current.date:dates?.slice().sort().at(-1);
-  if(target&&target!==current.current.date){const next=fresh.days.find(d=>d.date===target)||blank(target,fresh.rules);current.current=next;revision.current=0;savedRevision.current=0;setDay(next);setDirty(false);setTrade({...emptyTrade(),...next.draft_trade});setTab('Daily review')}
+  if(target&&target!==current.current.date){setSelectedDate(target);const next=fresh.days.find(d=>d.date===target)||blank(target,fresh.rules);current.current=next;revision.current=0;savedRevision.current=0;setDay(next);setDirty(false);setTrade({...emptyTrade(),...next.draft_trade});setTab('Daily review')}
  }
  const notify=text=>{setMessage(text);setNoticeId(n=>n+1)};
- const load=()=>fetch('/api/state/').then(r=>{if(!r.ok)throw Error('Could not load your journal.');return r.json()}).then(d=>{setData(d);const initial=d.days.find(x=>x.date===today)||blank(today,d.rules);current.current=initial;setDay(initial);setTrade({...emptyTrade(),...initial.draft_trade});setError('')}).catch(e=>setError(`${e.message} Check that Django is running on port 8000.`));
+ const load=()=>scopedFetch('/api/state/').then(r=>{if(!r.ok)throw Error('Could not load your journal.');return r.json()}).then(d=>{setData(d);const initial=d.days.find(x=>x.date===selectedDate)||blank(selectedDate,d.rules);current.current=initial;setDay(initial);setTrade({...emptyTrade(),...initial.draft_trade});setError('')}).catch(e=>setError(`${e.message} Check that Django is running on port 8000.`));
  useEffect(()=>{load()},[]);
  useEffect(()=>{const warn=e=>{if(dirty){e.preventDefault();e.returnValue='';}};window.addEventListener('beforeunload',warn);return()=>window.removeEventListener('beforeunload',warn)},[dirty]);
  const change=patch=>{current.current={...current.current,...patch};revision.current++;setDay(current.current);setDirty(true)};
@@ -57,10 +64,11 @@ function App(){
    if(!date||date===current.current.date){setTab('Daily review');return}
    if(pending.current && !await pending.current)return;
    while(revision.current!==savedRevision.current){if(!await save('auto'))return}
+   setSelectedDate(date);
    const next=data.days.find(d=>d.date===date)||blank(date,data.rules);
    current.current=next;revision.current=0;savedRevision.current=0;setDay(next);setDirty(false);setError('');setTrade({...emptyTrade(),...next.draft_trade});setTab('Daily review');
  };
- async function request(url,method,body){const res=await fetch(url,{method,headers:{'Content-Type':'application/json','X-CSRFToken':data.csrfToken},body:JSON.stringify(body)});const result=await res.json();if(!res.ok)throw Error(result.error||'Unable to save. Please try again.');return result;}
+ async function request(url,method,body){const res=await scopedFetch(url,{method,headers:{'Content-Type':'application/json','X-CSRFToken':data.csrfToken},body:JSON.stringify(body)});const result=await res.json();if(!res.ok)throw Error(result.error||'Unable to save. Please try again.');return result;}
  async function save(kind='manual'){
    if(clearing.current)return false;
    if(pending.current){const ok=await pending.current;if(kind==='manual'&&ok&&revision.current!==savedRevision.current)return save(kind);return ok;}
@@ -77,19 +85,29 @@ function App(){
    finally{pending.current=null;setBusy(false)}})();
    pending.current=operation;return operation;
  }
- async function clearTradingData(){
+ async function accountDataAction(id,kind){
+   if(pending.current&&!await pending.current)throw Error('Save your pending journal edits before continuing.');
+   while(revision.current!==savedRevision.current){if(!await save('auto'))throw Error('Save your pending journal edits before continuing.')}
    clearing.current=true;setBusy(true);
    try{
-     if(pending.current)await pending.current;
-     const result=await request('/api/trading-data/','DELETE',{confirmation:'CLEAR_ALL_TRADE_AND_JOURNAL_DATA'});
-     const clean=blank(today,data.rules);
-     current.current=clean;revision.current=0;savedRevision.current=0;
-     setDay(clean);setTrade(emptyTrade());setDirty(false);setError('');setMessage('');
-     setData(d=>({...d,days:[]}));setLedger({executions:[],trades:[],summaries:{},open_lots:[]});
-     try{Object.keys(localStorage).filter(key=>/^followthrough-(manual-fill-|manual-trade-|execution-draft-|execution-forms-)/.test(key)).forEach(key=>localStorage.removeItem(key))}catch{}
+     const deleting=kind==='delete';
+     const result=await request(`/api/accounts/${id}/${deleting?'':'data/'}`,'DELETE',{confirmation:`${deleting?'DELETE':'CLEAR'}_ACCOUNT_${id}`});
+     if(String(id)===accountId){
+       const clean=blank(current.current.date,data.rules);
+       current.current=clean;revision.current=0;savedRevision.current=0;
+       setDay(clean);setTrade(emptyTrade());setDirty(false);setError('');
+       setData(d=>({...d,days:[]}));setLedger({executions:[],trades:[],summaries:{},open_lots:[]});
+     }
+     try{Object.keys(localStorage).filter(key=>key.startsWith(`followthrough-manual-fill-${id}-`)).forEach(key=>localStorage.removeItem(key))}catch{}
+     await refreshAccounts();
      return result;
    }finally{clearing.current=false;setBusy(false)}
  }
+ beforeSwitch.current=async()=>{
+   if(pending.current&&!await pending.current)return false;
+   while(revision.current!==savedRevision.current){if(!await save('auto'))return false}
+   return true;
+ };
  saveLatest.current=save;
  useEffect(()=>{if(!dirty||busy)return;const timer=setTimeout(()=>saveLatest.current('auto'),3000);return()=>clearTimeout(timer)},[day,dirty,busy]);
  useEffect(()=>{const timer=setInterval(()=>saveLatest.current('auto'),30000);return()=>clearInterval(timer)},[]);
@@ -100,7 +118,7 @@ function App(){
  const following=ruleFollowing(day.checks);
  const grade=score(day.checks),pnl=day.trades.reduce((sum,t)=>sum+Number(t.pnl),0),completed=day.checks.filter(c=>c.status!=='pending').length;
  return <div className="shell"><aside><a className="brand" href="#" onClick={e=>{e.preventDefault();setTab('Daily review')}}><span className="mark">✓</span>Followthrough</a><span className="eyebrow workspace">PERSONAL WORKSPACE</span><nav>{['Daily review','Calendar','Rulebook','Strategies','Statistics','Settings'].map((label,i)=><button className={tab===label?'active':''} key={label} onClick={()=>{setTab(label);setMessage('');setError('')}}><span aria-hidden="true"><NavIcon index={i}/></span>{label}</button>)}</nav><button className="theme-toggle" aria-pressed={theme==='dark'} onClick={()=>setTheme(theme==='light'?'dark':'light')}>{theme==='light'?'☾ Dark mode':'☀ Light mode'}</button><div className="sidebar-note"><span className="eyebrow">THE GOAL</span><p>A repeatable process.<br/>One session at a time.</p></div></aside>
- <main><header><div><p className="eyebrow">TRADING / {tab.toUpperCase()}</p><h1>{tab==='Daily review'?'Grade the process.':tab==='Calendar'?'Your execution, day by day.':tab==='Rulebook'?'Your rules. Your standard.':tab==='Strategies'?'Define your edge.':tab==='Statistics'?'Your performance, in perspective.':'Your settings.'}</h1></div>{tab==='Daily review'&&<div className="header-actions"><span className={`reviewed-pill ${day.checks.length>0&&completed===day.checks.length?'is-reviewed':''}`} role="status" title="Reviewed when every rule has an assessment, including Not applicable."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>{day.checks.length>0&&completed===day.checks.length?'Reviewed':'Not reviewed'}</span><DatePicker value={day.date} onChange={selectDate} disabled={busy}/></div>}</header>
+ <main><header><div><p className="eyebrow">TRADING / {tab.toUpperCase()}</p><h1>{tab==='Daily review'?'Grade the process.':tab==='Calendar'?'Your execution, day by day.':tab==='Rulebook'?'Your rules. Your standard.':tab==='Strategies'?'Define your edge.':tab==='Statistics'?'Your performance, in perspective.':'Your settings.'}</h1></div>{tab==='Daily review'&&<div className="header-actions"><span className={`reviewed-pill ${day.checks.length>0&&completed===day.checks.length?'is-reviewed':''}`} role="status" title="Reviewed when every rule has an assessment, including Not applicable."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>{day.checks.length>0&&completed===day.checks.length?'Reviewed':'Not reviewed'}</span><DatePicker value={day.date} onChange={selectDate} disabled={busy}/><AccountSwitcher/></div>}{['Calendar','Statistics'].includes(tab)&&<div id="page-controls"/>}{tab==='Strategies'&&<AccountSwitcher/>}</header>
  {error&&<div className="alert error" role="alert">{error}</div>}{message&&<div key={noticeId} className="alert save-notice" role="status"><span aria-hidden="true">✓</span> {message}</div>}
  {tab==='Daily review'&&<><section className="stats"><div className="grade-stat"><span className="eyebrow">EXECUTION GRADE</span><div className="grade-number">{grade.letter}<span>{grade.value===null?'Awaiting review':`${grade.value}% adherence`}</span></div><p>{grade.value===null?'Assess each rule to calculate your grade.':'Your discipline score, independent of P&L.'}</p></div><div><span className="eyebrow">RULES FOLLOWED</span><div className="stat-number">{following.followed}<span> / {following.total}</span></div><div className="track"><div style={{width:`${following.total?following.followed/following.total*100:0}%`}}/></div></div><div className="daily-pnl-card"><span className="eyebrow">REALIZED NET P&L</span>{Object.entries(ledger.summaries[day.date]||{}).map(([c,s])=><div key={c} className={`daily-pnl-value ${Number(s.net)<0?'is-loss':'is-gain'}`}><div className="stat-number"><span className="pnl-trend" aria-hidden="true">{Number(s.net)<0?'↘':'↗'}</span>{Number(s.net)>0?'+':''}{money(s.net)} <small>{c}</small></div>{s.incomplete>0&&<p>Incomplete — missing cost basis</p>}</div>)}{!ledger.summaries[day.date]&&<p>No executions yet</p>}{day.trades.length>0&&<p>Legacy entries: {money(pnl)} · Account currency</p>}</div></section>
  <PerformanceCards trades={ledger.trades} summaries={ledger.summaries} start={day.date}/>
@@ -111,9 +129,9 @@ function App(){
  {tab==='Rulebook'&&<Rulebook rules={data.rules} request={request} notify={notify} onUpdated={rules=>{setData(d=>({...d,rules}));if(!data.days.some(d=>d.date===current.current.date))change({checks:rules.map(r=>({...r,status:current.current.checks.find(c=>c.id===r.id)?.status||'pending'}))})}}/>}
  {tab==='Strategies'&&<Strategies request={request} notify={notify}/>}
  {tab==='Statistics'&&<Statistics today={today}/>}
- {tab==='Settings'&&<Settings request={request} notify={notify} onClear={clearTradingData}/>}
+ {tab==='Settings'&&<Settings request={request} notify={notify} onAccountDataAction={accountDataAction}/>}
  {tab==='Calendar'&&<Calendar trades={ledger.trades} days={data.days} summaries={ledger.summaries} today={today} onOpen={selectDate}/>}
 
  <footer><span>FOLLOWTHROUGH / Personal trading journal</span><span>{dirty?'Unsaved changes': 'Make the process count.'}</span></footer></main></div>
 }
-createRoot(document.getElementById('root')).render(<App/>);
+createRoot(document.getElementById('root')).render(<AccountScope><App/></AccountScope>);

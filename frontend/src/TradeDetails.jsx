@@ -1,3 +1,4 @@
+import {useAccount} from './AccountScope.jsx';
 import React,{useEffect,useRef,useState} from 'react';
 const TradeChart=React.lazy(()=>import('./TradeChart.jsx'));
 import ExecutionList from './ExecutionList.jsx';
@@ -6,6 +7,7 @@ import Attachments from './Attachments.jsx';
 import TradeStrategy from './TradeStrategy.jsx';
 const money=(v,c)=>v===null?'—':new Intl.NumberFormat('en-US',{style:'currency',currency:c}).format(Number(v));
 export default function TradeDetails({trade,executions=[],onUpdated,request,csrfToken,notify,onClose}){
+ const {scopedFetch}=useAccount();
  const [notes,setNotes]=useState(''),[ready,setReady]=useState(false),[saving,setSaving]=useState(false),[error,setError]=useState(''),[status,setStatus]=useState('Loading journal…');
  const [activeTab,setActiveTab]=useState('Chart');
  const tabs=['Chart','Strategy','Executions','Notes'];
@@ -13,7 +15,7 @@ export default function TradeDetails({trade,executions=[],onUpdated,request,csrf
  async function saveAll(){return await save() && (await strategyRef.current?.flush() ?? true)}
  const current=useRef(''),saved=useRef(''),pending=useRef(null);
  const url=`/api/trades/${trade.trade_id}/journal/`;
- useEffect(()=>{const controller=new AbortController();fetch(url,{signal:controller.signal}).then(async r=>{if(!r.ok)throw Error('Could not load trade journal.');return r.json()}).then(d=>{current.current=saved.current=d.notes;setNotes(d.notes);setReady(true);setStatus('All changes saved')}).catch(e=>{if(e.name!=='AbortError')setError(e.message)});return()=>controller.abort()},[url]);
+ useEffect(()=>{const controller=new AbortController();scopedFetch(url,{signal:controller.signal}).then(async r=>{if(!r.ok)throw Error('Could not load trade journal.');return r.json()}).then(d=>{current.current=saved.current=d.notes;setNotes(d.notes);setReady(true);setStatus('All changes saved')}).catch(e=>{if(e.name!=='AbortError')setError(e.message)});return()=>controller.abort()},[url]);
  async function save(){
   if(pending.current){if(!await pending.current)return false;return save()}
   if(!ready||current.current===saved.current)return true;

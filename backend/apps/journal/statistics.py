@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 from django.http import HttpRequest, JsonResponse
 from django.views.decorators.http import require_GET
 
+from .accounts import request_account
 from .charts import configuration
 from .executions import ledger
 from .models import TradeStrategy
@@ -26,7 +27,7 @@ def statistics(request: HttpRequest) -> JsonResponse:
     )
     local_zone = ZoneInfo(configuration()[1])
     rows = []
-    for trade in ledger()["trades"]:
+    for trade in ledger(request_account(request))["trades"]:
         if trade["is_open"] or trade["net"] is None or not trade["close_time"]:
             continue
         closed = trade["close_time"][:10]

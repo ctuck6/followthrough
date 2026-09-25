@@ -1,3 +1,4 @@
+import {useAccount} from './AccountScope.jsx';
 import React,{useEffect,useState,useRef} from 'react';
 import Modal from './components/Modal.jsx';
 import Select from './components/Select.jsx';
@@ -8,10 +9,11 @@ function StrategyMenu({strategy,onEdit,onDelete}){
  return <div onClick={e=>e.stopPropagation()} onKeyDown={e=>e.stopPropagation()}><button ref={anchor} className="strategy-menu-trigger" aria-label={`Actions for ${strategy.name}`} aria-expanded={open} onClick={()=>setOpen(!open)}>⋮</button>{open&&<Popover anchor={anchor} label="Strategy actions" className="strategy-mini-menu" onClose={()=>setOpen(false)}><button onClick={()=>{setOpen(false);onEdit(strategy)}}>Edit</button><button className="is-loss" onClick={()=>{setOpen(false);onDelete(strategy)}}>Delete</button></Popover>}</div>
 }
 export default function Strategies({request,notify}){
+ const {scopedFetch}=useAccount();
  const [items,setItems]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState(''),[creating,setCreating]=useState(false),[saving,setSaving]=useState(false),[name,setName]=useState(''),[criteria,setCriteria]=useState(['']),[currency,setCurrency]=useState('USD'),[selected,setSelected]=useState(null),[editing,setEditing]=useState(null),[deleting,setDeleting]=useState(null);
  function edit(s){setSelected(null);setEditing(s);setName(s.name);setCriteria(s.criteria.map(c=>({...c})));setError('');setCreating(true)}
  async function remove(){setSaving(true);setError('');try{await request(`/api/strategies/${deleting.id}/`,'DELETE');setItems(old=>old.filter(s=>s.id!==deleting.id));setSelected(null);setDeleting(null);notify('Strategy deleted.')}catch(e){setError(e.message)}finally{setSaving(false)}}
- useEffect(()=>{const controller=new AbortController();fetch('/api/strategies/',{signal:controller.signal}).then(async r=>{if(!r.ok)throw Error('Could not load strategies.');return r.json()}).then(d=>{setItems(d.strategies);const currencies=d.strategies.flatMap(s=>Object.keys(s.currencies));if(currencies.length&&!currencies.includes('USD'))setCurrency(currencies[0])}).catch(e=>{if(e.name!=='AbortError')setError(e.message)}).finally(()=>setLoading(false));return()=>controller.abort()},[]);
+ useEffect(()=>{const controller=new AbortController();scopedFetch('/api/strategies/',{signal:controller.signal}).then(async r=>{if(!r.ok)throw Error('Could not load strategies.');return r.json()}).then(d=>{setItems(d.strategies);const currencies=d.strategies.flatMap(s=>Object.keys(s.currencies));if(currencies.length&&!currencies.includes('USD'))setCurrency(currencies[0])}).catch(e=>{if(e.name!=='AbortError')setError(e.message)}).finally(()=>setLoading(false));return()=>controller.abort()},[]);
  const currencies=[...new Set(items.flatMap(s=>Object.keys(s.currencies)))].sort();
  const rows=items.map(s=>({...s,stats:s.currencies[currency]||{trades:0,closed:0}}));
  const ranked=rows.filter(s=>s.stats.closed>0).sort((a,b)=>Number(b.stats.net)-Number(a.stats.net));

@@ -131,3 +131,31 @@ input,textarea,select{border-radius:10px;padding:13px 14px;border-color:var(--li
 .profile-form>label>input,.profile-form>label>textarea,.profile-form>label>.select-control,.strategy-form>label>input,.strategy-form>label>textarea,.trade-strategy>label>.select-control,.inline-rule-form>label>textarea,.inline-rule-form>label>.select-control{margin-top:0}
 .profile-form input:not([type="checkbox"]),.strategy-form input:not([type="checkbox"]){height:var(--control-height);min-height:var(--control-height);padding:10px 16px;border-radius:var(--control-radius);font-size:var(--control-font)}
 .strategy-criterion-input textarea{margin-top:0}
+/* Account controls share the date controls' geometry and wrap together. */
+.account-switcher{width:220px;max-width:100%;flex-shrink:0}
+.account-switcher .select-trigger{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.header-actions{flex-wrap:wrap;justify-content:flex-end}
+.calendar-account-controls{display:flex;align-items:center;justify-content:flex-end;gap:16px;flex-wrap:wrap}
+.calendar-account-controls .range-controls{min-width:180px}
+.report-toolbar{justify-content:flex-end;flex-wrap:wrap}
+.report-toolbar>div:first-child{margin-right:auto}
+@media(max-width:700px){.calendar-account-controls{justify-content:flex-start}.header-actions{justify-content:flex-start}.account-switcher{width:200px}}
+#page-controls{margin-left:auto;max-width:100%}
+.calendar-range-control{display:grid;gap:5px;min-width:200px}
+.calendar-range-control .field-label{margin:0;font-size:.75rem}
+.calendar-range-control small{font-size:.7rem}
+#page-controls .report-toolbar{margin:0;gap:12px}
+#page-controls .report-toolbar>div:first-child{margin:0}
+
+.settings-view.accounts-settings{max-width:none}
+.account-table th:last-child,.account-table td:last-child{position:sticky;right:0;background:var(--surface);width:64px;text-align:center}
+.account-table th:last-child{background:var(--field)}
+.account-table td:last-child .strategy-menu-trigger{margin:auto}
+
+.statistics-view .report-ticker-row{display:block;width:100%;padding:12px;text-align:left;color:var(--ink);background:transparent;border:1px solid transparent;border-radius:12px;box-shadow:none;transform:none;transition:background .18s,border-color .18s}
+.statistics-view .report-ticker-row:hover{background:rgb(80 80 80 / .07);transform:none;box-shadow:none}
+[data-theme="dark"] .statistics-view .report-ticker-row:hover{background:rgb(255 255 255 / .07)}
+.statistics-view .report-ticker-row[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.statistics-view .report-ticker-row:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.statistics-view .trade-detail-tabs{flex-wrap:wrap}
+.statistics-view .trade-detail-tabs button{flex:1 0 100px}

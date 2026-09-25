@@ -1,3 +1,4 @@
+import {useAccount} from './AccountScope.jsx';
 import React,{useEffect,useRef,useState} from 'react';
 import {createChart,CandlestickSeries,createSeriesMarkers,ColorType} from 'lightweight-charts';
 import Select from './components/Select.jsx';
@@ -36,10 +37,11 @@ export function CandleChart({data,storageKey}) {
 }
 
 export default function TradeChart({trade}){
+ const {scopedFetch}=useAccount();
  const [date,setDate]=useState(''),[data,setData]=useState(null),[error,setError]=useState(''),[loading,setLoading]=useState(true),[retry,setRetry]=useState(0);
  useEffect(()=>{
   const controller=new AbortController();setLoading(true);setError('');
-  fetch(`/api/trades/${encodeURIComponent(trade.trade_id)}/chart/${date?`?date=${date}`:''}`,{signal:controller.signal}).then(async response=>{const result=await response.json();if(!response.ok)throw Error(result.error||'Could not load chart.');return result}).then(result=>{setData(result);setLoading(false)}).catch(error=>{if(error.name!=='AbortError'){setError(error.message);setLoading(false)}});
+  scopedFetch(`/api/trades/${encodeURIComponent(trade.trade_id)}/chart/${date?`?date=${date}`:''}`,{signal:controller.signal}).then(async response=>{const result=await response.json();if(!response.ok)throw Error(result.error||'Could not load chart.');return result}).then(result=>{setData(result);setLoading(false)}).catch(error=>{if(error.name!=='AbortError'){setError(error.message);setLoading(false)}});
   return()=>controller.abort();
  },[trade.trade_id,date,retry]);
  return <section className="trade-charts"><div className="chart-heading"><h3>{trade.asset_class==='OPT'?`${trade.symbol} · Underlying`:`${trade.symbol} · Chart`}</h3><span className="chart-interval">1 minute</span>{data?.dates.length>1&&<Select aria-label="Chart session" value={date||data.date} onChange={event=>setDate(event.target.value)}>{data.dates.map(day=><option key={day} value={day}>{day}</option>)}</Select>}</div>{loading?<p className="chart-status" role="status">Loading chart…</p>:error||data?.error?<div className="chart-status" role="status"><p>{error||data.error}</p><button onClick={()=>setRetry(value=>value+1)}>Retry</button></div>:data&&<CandleChart key={data.date} data={data} storageKey={`followthrough-drawings:${trade.trade_id}:${data.date}`}/>}

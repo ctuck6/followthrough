@@ -1,10 +1,12 @@
+import {useAccount} from './AccountScope.jsx';
 import React,{useEffect,useState} from 'react';
 import Select from './components/Select.jsx';
 import DatePicker from './components/DatePicker.jsx';
 import TimePicker from './components/TimePicker.jsx';
 export default function ManualTradeForm({asset,date,request,onUpdated,notify}){
+ const {accountId}=useAccount();
  const blank=()=>({id:crypto.randomUUID(),asset,symbol:'',side:'BUY',quantity:'',price:'',commission:'0',executed_at:`${date}T09:30:00`,expiry:date,strike:'',put_call:'C',multiplier:asset==='OPT'?'100':asset==='FUT'?'':'1'});
- const storage=`followthrough-manual-fill-${date}-${asset}`;
+ const storage=`followthrough-manual-fill-${accountId}-${date}-${asset}`;
  const [form,setForm]=useState(()=>{try{return JSON.parse(localStorage.getItem(storage))||blank()}catch{return blank()}}),[busy,setBusy]=useState(false),[error,setError]=useState('');
  useEffect(()=>{try{localStorage.setItem(storage,JSON.stringify(form))}catch{}},[form,storage]);
  const update=(key,value)=>setForm(f=>({...f,[key]:value}));

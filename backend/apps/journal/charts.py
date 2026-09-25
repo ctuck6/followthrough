@@ -35,9 +35,7 @@ def configuration() -> tuple[str, str]:
 
     return (
         os.environ.get("TWELVE_DATA_API_KEY", values.get("TWELVE_DATA_API_KEY", "")),
-        os.environ.get(
-            "TRADING_TIMEZONE", values.get("TRADING_TIMEZONE", "America/Los_Angeles")
-        ),
+        os.environ.get("TRADING_TIMEZONE", values.get("TRADING_TIMEZONE", "America/Los_Angeles")),
     )
 
 
@@ -75,9 +73,7 @@ def candles_for_day(symbol: str, currency: str, day: str, zone: str) -> list[dic
     key, _ = configuration()
     if not key:
         raise ChartError("Add TWELVE_DATA_API_KEY to backend/.env to load charts.")
-    start = datetime.combine(
-        date.fromisoformat(day), datetime.min.time(), ZoneInfo(zone)
-    )
+    start = datetime.combine(date.fromisoformat(day), datetime.min.time(), ZoneInfo(zone))
     end = start + timedelta(days=1) - timedelta(seconds=1)
     now = time.time()
     cache_key = sha256(f"{symbol}|{currency}|{day}|{zone}|1min".encode()).hexdigest()
@@ -138,25 +134,16 @@ def candles_for_day(symbol: str, currency: str, day: str, zone: str) -> list[dic
                 429: "Twelve Data rate limit reached. Please try again later.",
             }
             raise ChartError(
-                messages.get(
-                    code, "No candle data is available for this symbol and date."
-                )
+                messages.get(code, "No candle data is available for this symbol and date.")
             )
         meta = payload.get("meta", {})
-        if (
-            meta.get("symbol", "").upper() != symbol.upper()
-            or meta.get("currency") != currency
-        ):
-            raise ChartError(
-                "The returned instrument or currency does not match this trade."
-            )
+        if meta.get("symbol", "").upper() != symbol.upper() or meta.get("currency") != currency:
+            raise ChartError("The returned instrument or currency does not match this trade.")
         try:
             candles = parse_candles(payload)
         except (KeyError, TypeError, ValueError):
             raise ChartError("The provider returned invalid candle data.") from None
-        candles = [
-            c for c in candles if start.timestamp() <= c["time"] <= end.timestamp()
-        ]
+        candles = [c for c in candles if start.timestamp() <= c["time"] <= end.timestamp()]
         # Cache settled sessions for a month, recent/empty sessions briefly.
         ttl = 2592000 if candles and end.timestamp() < now - 86400 else 300
         database.execute(
@@ -172,10 +159,11 @@ def candles_for_day(symbol: str, currency: str, day: str, zone: str) -> list[dic
 
 @require_GET
 def trade_chart(request: HttpRequest, key: str) -> JsonResponse:
+    from .accounts import request_account
     from .models import Execution
     from .views import trade_by_key
 
-    trade = trade_by_key(key)
+    trade = trade_by_key(key, request_account(request))
     _, zone = configuration()
     try:
         ZoneInfo(zone)
@@ -217,9 +205,7 @@ def trade_chart(request: HttpRequest, key: str) -> JsonResponse:
                 "Historical option-contract candles are not available from the configured data source."
             )
         try:
-            data["candles"] = candles_for_day(
-                trade["symbol"], trade["currency"], selected, zone
-            )
+            data["candles"] = candles_for_day(trade["symbol"], trade["currency"], selected, zone)
             if not data["candles"]:
                 data["error"] = "No candles are available for this trading session."
         except ChartError as error:
@@ -228,8 +214,6 @@ def trade_chart(request: HttpRequest, key: str) -> JsonResponse:
         return JsonResponse(data)
     except (ValueError, KeyError, sqlite3.Error):
         return JsonResponse(
-            {
-                "error": "Unable to load this chart. Check the date and TRADING_TIMEZONE setting."
-            },
+            {"error": "Unable to load this chart. Check the date and TRADING_TIMEZONE setting."},
             status=400,
         )

@@ -1,10 +1,12 @@
+import {useAccount} from './AccountScope.jsx';
 import React,{forwardRef,useEffect,useImperativeHandle,useRef,useState} from 'react';
 import Select from './components/Select.jsx';
 export default forwardRef(function TradeStrategy({trade,request,onBusyChange},ref){
+ const {scopedFetch}=useAccount();
  const [catalog,setCatalog]=useState([]),[value,setValue]=useState({strategy_id:null,checked:[]}),[ready,setReady]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const current=useRef(value),saved=useRef(value),pending=useRef(null);
  const url=`/api/trades/${trade.trade_id}/strategy/`;
- useEffect(()=>{const controller=new AbortController();fetch(url,{signal:controller.signal}).then(async r=>{if(!r.ok)throw Error('Could not load trade strategy.');return r.json()}).then(d=>{setCatalog(d.strategies);const v={strategy_id:d.strategy_id,checked:d.checked};current.current=saved.current=v;setValue(v);setReady(true)}).catch(e=>{if(e.name!=='AbortError')setError(e.message)});return()=>controller.abort()},[url]);
+ useEffect(()=>{const controller=new AbortController();scopedFetch(url,{signal:controller.signal}).then(async r=>{if(!r.ok)throw Error('Could not load trade strategy.');return r.json()}).then(d=>{setCatalog(d.strategies);const v={strategy_id:d.strategy_id,checked:d.checked};current.current=saved.current=v;setValue(v);setReady(true)}).catch(e=>{if(e.name!=='AbortError')setError(e.message)});return()=>controller.abort()},[url]);
  async function save(){if(pending.current)return pending.current;if(current.current===saved.current)return true;const snapshot=current.current;setBusy(true);onBusyChange(true);setError('');const operation=(async()=>{try{await request(url,'PUT',snapshot);saved.current=snapshot;return true}catch(e){setError(e.message);return false}finally{pending.current=null;setBusy(false);onBusyChange(false)}})();pending.current=operation;return operation}
  useImperativeHandle(ref,()=>({flush:save}));
  useEffect(()=>{const warn=e=>{if(current.current!==saved.current){e.preventDefault();e.returnValue=''}};window.addEventListener('beforeunload',warn);return()=>window.removeEventListener('beforeunload',warn)},[]);

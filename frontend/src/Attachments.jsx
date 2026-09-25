@@ -1,7 +1,9 @@
+import {useAccount} from './AccountScope.jsx';
 import React, {useEffect, useState, useRef} from 'react';
 import Modal from './components/Modal.jsx';
 
 export default function Attachments({date, csrfToken, notify, tradeKey}) {
+ const {scopedFetch}=useAccount();
   const base=tradeKey?`/api/trades/${tradeKey}/attachments/`:`/api/days/${date}/attachments/`;
   const context=tradeKey?'this trade':date;
   const [items,setItems]=useState([]),[loading,setLoading]=useState(true),[uploading,setUploading]=useState(false),[error,setError]=useState('');
@@ -10,7 +12,7 @@ export default function Attachments({date, csrfToken, notify, tradeKey}) {
   async function remove(){
     setDeleting(true);setDeleteError('');
     try{
-      const response=await fetch(`${base}${removing.id}/`,{method:'DELETE',headers:{'X-CSRFToken':csrfToken}});
+      const response=await scopedFetch(`${base}${removing.id}/`,{method:'DELETE',headers:{'X-CSRFToken':csrfToken}});
       if(!response.ok){let message='Could not delete this attachment. Please try again.';try{message=(await response.json()).error||message}catch{}throw Error(message)}
       setItems(previous=>previous.filter(item=>item.id!==removing.id));setRemoving(null);notify(`Attachment deleted from ${date}.`);
     }catch(e){setDeleteError(e.message)}finally{setDeleting(false)}
@@ -18,7 +20,7 @@ export default function Attachments({date, csrfToken, notify, tradeKey}) {
   useEffect(()=>{
     alive.current=true;
     const controller=new AbortController();
-    fetch(base,{signal:controller.signal}).then(async response=>{
+    scopedFetch(base,{signal:controller.signal}).then(async response=>{
       if(!response.ok)throw Error('Could not load attachments. Reopen this day to try again.');
       const result=await response.json();setItems(result.attachments);
     }).catch(e=>{if(e.name!=='AbortError')setError(e.message)}).finally(()=>{if(alive.current)setLoading(false)});
@@ -31,7 +33,7 @@ export default function Attachments({date, csrfToken, notify, tradeKey}) {
       if(file.size===0||file.size>20*1024*1024){failures.push(`${file.name}: choose a nonempty file up to 20 MB.`);continue}
       try{
         const body=new FormData();body.append('file',file);
-        const response=await fetch(base,{method:'POST',headers:{'X-CSRFToken':csrfToken},body});
+        const response=await scopedFetch(base,{method:'POST',headers:{'X-CSRFToken':csrfToken},body});
         if(!response.ok){let reason='Upload failed. Please try again.';try{reason=(await response.json()).error||reason}catch{}throw Error(reason)}
         const attachment=await response.json();saved++;
         if(alive.current)setItems(previous=>[...previous,attachment]);

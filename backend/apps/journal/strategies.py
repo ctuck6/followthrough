@@ -31,13 +31,13 @@ def validate_create(data: dict) -> dict:
     }
 
 
-def strategy_stats() -> list[dict]:
+def strategy_stats(account_id="all") -> list[dict]:
     assignments = dict(TradeStrategy.objects.values_list("trade_key", "strategy_id"))
     results = {
         s.pk: {**serialize(s), "currencies": {}}
         for s in Strategy.objects.all().order_by("created_at", "pk")
     }
-    for trade in ledger()["trades"]:
+    for trade in ledger(account_id)["trades"]:
         record = results.get(assignments.get(trade["trade_id"]))
         if record is None:
             continue
@@ -96,7 +96,9 @@ def body(request: HttpRequest) -> dict:
 @require_http_methods(["GET", "POST"])
 def strategies(request: HttpRequest) -> JsonResponse:
     if request.method == "GET":
-        return JsonResponse({"strategies": strategy_stats()})
+        from .accounts import request_account
+
+        return JsonResponse({"strategies": strategy_stats(request_account(request))})
     try:
         strategy = Strategy.objects.create(**validate_create(body(request)))
 
@@ -107,9 +109,10 @@ def strategies(request: HttpRequest) -> JsonResponse:
 
 @require_http_methods(["GET", "PUT"])
 def trade_strategy(request: HttpRequest, key: str) -> JsonResponse:
+    from .accounts import request_account
     from .views import trade_by_key
 
-    trade_by_key(key)
+    trade_by_key(key, request_account(request))
     if request.method == "GET":
         assignment = TradeStrategy.objects.filter(pk=key).first()
 

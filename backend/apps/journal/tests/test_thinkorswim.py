@@ -44,7 +44,7 @@ class ThinkorswimTests(TestCase):
     def test_empty_accounts_is_success(self) -> None:
         response = self.client.get("/api/accounts/")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), {"accounts": []})
+        self.assertEqual(response.json(), {"accounts": [], "has_unassigned": False})
 
     def test_futures_long_short_and_contract_separation(self) -> None:
         text = self.statement(
