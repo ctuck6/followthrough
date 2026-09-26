@@ -10,10 +10,6 @@ export const palettes = {
  Tide: {
  light: ['#eff6f9','#ffffff','#233e4b','#607985','#d1e2e9','#f7fbfd','#226d8f','#dceff6','#143342','#b6e2ed','#247c65','#bc5054','#a06b27','#6677b5'],
  dark: ['#101e29','#192f3e','#e0eff4','#a2bbc7','#355260','#142735','#80d0e6','#244857','#132c3b','#b6e2ed','#78d5b6','#f09b98','#e7bb79','#adbbee']
- },
- Ember: {
- light: ['#faf3ec','#fffdf9','#48352e','#806b60','#e8d9cc','#fff9f2','#9a512f','#f8e5d2','#38281f','#f3d1a7','#477e50','#bb444e','#427f8a','#9968a0'],
- dark: ['#231a16','#342720','#f5e8d9','#c4af9c','#574438','#2b201a','#efb97f','#543b28','#302219','#f3d1a7','#a5cf92','#f2929b','#85c8cf','#d6a9dc']
  }
 };
 export const tokenNames=['canvas','surface','ink','muted','line','field','accent','accent-soft','sidebar','nav-active','report-teal','report-coral','report-blue','report-violet'];

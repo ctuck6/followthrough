@@ -44,7 +44,7 @@ def accounts(request: HttpRequest) -> JsonResponse:
         broker = data.get("broker")
         if not isinstance(name, str) or not 1 <= len(name.strip()) <= 100:
             raise ValueError("Enter an account name of 1–100 characters.")
-        if broker not in ("ibkr", "schwab"):
+        if broker not in ("ibkr", "schwab", "tradovate"):
             raise ValueError("Choose Charles Schwab or Interactive Brokers.")
         with transaction.atomic():
             # Obtain SQLite's writer lock before checking the account limit.
@@ -71,11 +71,12 @@ def prepare_import(data: dict) -> tuple[list, BrokerageAccount | None]:
         raise ValueError("Choose a valid brokerage account.") from error
     from .thinkorswim import parse_statement
 
-    rows = (
-        parse_statement(data["csv"])
-        if account.broker == "schwab"
-        else parse_csv(data["csv"])
+    from .tradovate import parse_orders
+
+    parser = {"schwab": parse_statement, "tradovate": parse_orders}.get(
+        account.broker, parse_csv
     )
+    rows = parser(data["csv"])
     identifiers = {r["account"] for r in rows}
     if len(identifiers) != 1:
         raise ValueError("Upload executions for one brokerage account at a time.")
@@ -184,7 +185,7 @@ def account_detail(request: HttpRequest, pk: int) -> JsonResponse:
         if not isinstance(name, str) or not 1 <= len(name.strip()) <= 100:
             raise ValueError("Enter an account name of 1–100 characters.")
 
-        if broker not in ("ibkr", "schwab"):
+        if broker not in ("ibkr", "schwab", "tradovate"):
             raise ValueError("Choose Charles Schwab or Interactive Brokers.")
 
         with transaction.atomic():

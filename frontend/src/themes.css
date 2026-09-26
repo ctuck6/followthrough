@@ -1,7 +1,7 @@
 /* Shared palette tokens apply to every appearance mode. */
 :root{--hover:color-mix(in srgb,var(--accent) 9%,var(--surface))}
 aside{background:var(--sidebar)}
-.mark,nav button.active,nav button.active:hover{background:var(--nav-active);color:var(--sidebar)}
+nav button.active,nav button.active:hover{background:var(--nav-active);color:var(--sidebar)}
 nav button:hover{background:color-mix(in srgb,var(--nav-active) 12%,var(--sidebar))}
 :root .primary{background:var(--accent);border-color:var(--accent);color:var(--canvas)}
 :root .primary:hover{background:color-mix(in srgb,var(--accent) 85%,var(--ink))}
@@ -25,8 +25,10 @@ nav button:hover{background:color-mix(in srgb,var(--nav-active) 12%,var(--sideba
 @media(max-width:700px){.theme-picker{max-width:240px;margin:16px 0 0}}
 
 /* P&L semantics stay identical across all palettes. */
-:root{--pnl-positive:#c9233e;--pnl-negative:#087c42}
-:root[data-theme="dark"]{--pnl-positive:#ff526b;--pnl-negative:#36e589}
-:root .is-gain,:root .report-gain,:root .positive,:root .performance-value.is-gain{color:var(--pnl-positive)}
-:root .is-loss,:root .report-loss,:root .negative{color:var(--pnl-negative)}
+:root{--pnl-positive:#087c42;--pnl-negative:#c9233e}
+:root[data-theme="dark"]{--pnl-positive:#36e589;--pnl-negative:#ff526b}
+:root[data-theme] .is-gain,:root[data-theme] .report-gain,:root[data-theme] .positive,:root .performance-value.is-gain{color:var(--pnl-positive)}
+:root[data-theme] .is-loss,:root[data-theme] .report-loss,:root[data-theme] .negative{color:var(--pnl-negative)}
 :root .daily-pnl-value .pnl-trend{color:inherit}
+
+:root .mark{background:#c2ef85;color:#17291f}

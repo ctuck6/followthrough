@@ -80,7 +80,7 @@ class TradeStrategy(models.Model):
 class BrokerageAccount(models.Model):
     name = models.CharField(max_length=100)
     broker = models.CharField(
-        max_length=20, choices=[("ibkr", "Interactive Brokers"), ("schwab", "Charles Schwab")]
+        max_length=20, choices=[("ibkr", "Interactive Brokers"), ("schwab", "Charles Schwab"), ("tradovate", "Tradovate")]
     )
     source_identifier = models.CharField(max_length=150, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
