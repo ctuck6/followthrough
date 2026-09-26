@@ -25,8 +25,8 @@ nav button:hover{background:color-mix(in srgb,var(--nav-active) 12%,var(--sideba
 @media(max-width:700px){.theme-picker{max-width:240px;margin:16px 0 0}}
 
 /* P&L semantics stay identical across all palettes. */
-:root{--pnl-positive:#087c42;--pnl-negative:#c9233e}
-:root[data-theme="dark"]{--pnl-positive:#36e589;--pnl-negative:#ff526b}
+:root{--pnl-positive:#087c42;--pnl-negative:#c62828}
+:root[data-theme="dark"]{--pnl-positive:#36e589;--pnl-negative:#ff4848}
 :root[data-theme] .is-gain,:root[data-theme] .report-gain,:root[data-theme] .positive,:root .performance-value.is-gain{color:var(--pnl-positive)}
 :root[data-theme] .is-loss,:root[data-theme] .report-loss,:root[data-theme] .negative{color:var(--pnl-negative)}
 :root .daily-pnl-value .pnl-trend{color:inherit}

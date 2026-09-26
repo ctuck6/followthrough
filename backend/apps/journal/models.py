@@ -54,6 +54,7 @@ class TradeReview(models.Model):
 
 
 class Profile(models.Model):
+    photo = models.FileField(upload_to="profiles/", blank=True)
     display_name = models.CharField(max_length=100, blank=True)
     bio = models.TextField(blank=True)
 

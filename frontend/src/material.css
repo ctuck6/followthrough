@@ -159,3 +159,83 @@ input,textarea,select{border-radius:10px;padding:13px 14px;border-color:var(--li
 .statistics-view .report-ticker-row:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .statistics-view .trade-detail-tabs{flex-wrap:wrap}
 .statistics-view .trade-detail-tabs button{flex:1 0 100px}
+
+/* The toggle remains reachable when navigation is hidden. */
+.shell{position:relative}
+.shell>aside#workspace-sidebar{padding-top:76px;padding-bottom:14px;overflow-y:auto;overscroll-behavior:contain;height:100dvh}
+.shell>aside#workspace-sidebar[hidden]{display:none}
+.shell.sidebar-collapsed{grid-template-columns:64px minmax(0,1fr)}
+.shell.sidebar-collapsed>main{grid-column:2}
+.sidebar-toggle-rail{position:fixed;top:16px;left:18px;z-index:30}
+.sidebar-toggle{display:grid;place-items:center;width:40px;height:40px;padding:0;border-radius:12px;background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+.sidebar-toggle svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+#workspace-sidebar .sidebar-note{padding:24px 16px 0;margin-top:auto}
+#workspace-sidebar .sidebar-note p{margin:10px 0 0}
+@media(max-width:700px){.shell.sidebar-collapsed{display:block}.shell.sidebar-collapsed>main{padding-top:76px}.shell>aside#workspace-sidebar{height:auto;padding-top:70px}.sidebar-toggle-rail{top:14px;left:16px}}
+
+#workspace-sidebar nav button .nav-label{font-size:inherit;line-height:1.4}
+.shell.sidebar-collapsed{display:grid;grid-template-columns:76px minmax(0,1fr)}
+.shell.sidebar-collapsed>aside#workspace-sidebar{display:flex;position:sticky;top:0;height:100dvh;padding:76px 10px 14px;align-items:center}
+.sidebar-collapsed #workspace-sidebar .brand{padding:0}
+.sidebar-collapsed #workspace-sidebar .brand-name,.sidebar-collapsed #workspace-sidebar .workspace,.sidebar-collapsed #workspace-sidebar .sidebar-note,.sidebar-collapsed #workspace-sidebar .nav-label{display:none}
+.sidebar-collapsed #workspace-sidebar nav{display:flex;flex-direction:column;gap:8px;margin-top:28px;width:100%}
+.sidebar-collapsed #workspace-sidebar nav button{justify-content:center;min-height:48px;width:100%;padding:12px;border-radius:16px}
+.sidebar-collapsed #workspace-sidebar nav button>span:first-child{display:flex}
+.appearance-settings .theme-picker{margin:0;max-width:340px}
+@media(max-width:700px){.shell.sidebar-collapsed>main{padding-top:28px}.sidebar-collapsed .sidebar-toggle-rail{left:18px}.sidebar-collapsed #workspace-sidebar .nav-icon{width:21px;height:21px}}
+/* Independent navbar and bounded scrolling keep both footers in view. */
+.shell{height:100dvh;min-height:0;overflow:hidden;grid-template-rows:72px minmax(0,1fr)}
+.app-navbar{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:var(--sidebar);border-bottom:1px solid var(--line);color:#f5f7ef;z-index:20}
+.navbar-start{display:flex;align-items:center;gap:18px;min-width:0}
+.app-navbar .brand{padding:0}
+.app-navbar .brand-name{display:inline}
+.navbar-profile{width:44px;height:44px;border-radius:50%;padding:0;display:grid;place-items:center;border:1px solid var(--accent);background:var(--accent-soft);color:var(--accent);overflow:hidden;flex-shrink:0}
+.navbar-profile img,.profile-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.shell>aside#workspace-sidebar,.shell.sidebar-collapsed>aside#workspace-sidebar{grid-row:2;position:static;height:100%;padding:24px 18px 14px;overflow:hidden;min-height:0;align-items:stretch}
+#workspace-sidebar .workspace{margin:0 12px 20px;flex-shrink:0}
+#workspace-sidebar nav{overflow-y:auto;min-height:0;flex:1;align-content:start}
+#workspace-sidebar .sidebar-note{flex-shrink:0;margin-top:18px;padding:16px 10px 0;border-top:1px solid var(--line)}
+#workspace-sidebar .sidebar-note .eyebrow{font-size:.6rem}
+#workspace-sidebar .sidebar-note p{font-size:.75rem;margin:8px 0 0}
+.shell>main,.shell.sidebar-collapsed>main{grid-row:2;margin:0;max-width:none;padding:0;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.page-content{flex:1;min-height:0;overflow:auto;padding:32px 36px;overscroll-behavior:contain}
+.shell>main>footer{flex-shrink:0;margin:0;padding:14px 36px;background:var(--canvas);border-top:1px solid var(--line)}
+.sidebar-collapsed #workspace-sidebar nav{margin-top:0;flex:1}
+.shell.sidebar-collapsed>aside#workspace-sidebar{padding:24px 10px 14px}
+.profile-avatar{overflow:hidden}
+@media(max-width:700px){.shell,.shell.sidebar-collapsed{display:grid;grid-template-columns:76px minmax(0,1fr);grid-template-rows:64px minmax(0,1fr)}.shell:not(.sidebar-collapsed){grid-template-columns:200px minmax(0,1fr)}.app-navbar{padding:10px 14px}.navbar-start{gap:10px}.app-navbar .brand{font-size:1rem}.shell>aside#workspace-sidebar nav{display:flex;flex-direction:column;margin-top:0}.shell>aside#workspace-sidebar nav button{flex-direction:row;justify-content:flex-start;min-height:48px;padding:10px;gap:10px}.shell.sidebar-collapsed>aside#workspace-sidebar nav button{justify-content:center}.shell>aside#workspace-sidebar .sidebar-note{display:block}.shell.sidebar-collapsed>aside#workspace-sidebar .sidebar-note{display:none}.page-content{padding:24px 16px}.shell>main>footer{padding:10px 16px;font-size:.6rem}.navbar-profile{width:38px;height:38px}}
+
+/* Short pages fill the viewport; long pages reveal the footer after content. */
+.shell>main,.shell.sidebar-collapsed>main{overflow-y:auto;overscroll-behavior:contain}
+.shell>main>.page-content{flex:1 0 auto;overflow:visible;min-height:auto}
+.profile-menu{width:270px;max-width:calc(100vw - 16px);padding:16px;border:1px solid var(--line);border-radius:18px;background:var(--surface);color:var(--ink);box-shadow:var(--elevation)}
+.profile-menu-mode{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.profile-menu-mode strong{font-size:.875rem}
+.profile-menu-mode .theme-mode{margin:0;background:var(--field)}
+.profile-menu-mode .theme-mode button{font-size:20px;width:38px;height:36px;padding:0}
+.profile-menu-settings{display:flex;align-items:center;gap:12px;width:100%;margin-top:10px;padding:12px;border:0;background:transparent;text-align:left;border-radius:10px}
+.profile-menu-settings:hover{background:var(--hover)}
+/* Use one opaque cell color, including the sticky actions cell. */
+:root{--table-row-hover:color-mix(in srgb,var(--ink) 6%,var(--surface));--table-action-hover:color-mix(in srgb,var(--ink) 15%,var(--surface))}
+.strategy-table tbody tr:hover{background:transparent}
+.strategy-table tbody tr>td{transition:background-color .18s}
+.strategy-table tbody tr:hover>td{background:var(--table-row-hover)}
+.strategy-table .strategy-menu-trigger:hover,.strategy-table .strategy-menu-trigger[aria-expanded="true"]{background:var(--table-action-hover);color:var(--ink);transform:none}
+.profile-menu{width:200px;padding:11px;border-radius:14px}
+.profile-menu-mode{gap:8px;padding-bottom:10px}
+.profile-menu-mode strong{font-size:.75rem}
+.profile-menu-mode .theme-mode button{font-size:17px;width:30px;height:30px}
+.profile-menu-settings{gap:8px;margin-top:7px;padding:8px;font-size:.75rem}
+.profile-menu-settings .nav-icon{width:18px;height:18px}
+
+.profile-theme-list{display:grid;gap:3px;padding:8px 0;border-bottom:1px solid var(--line)}
+.profile-theme-list .theme-choice{padding:7px 5px;border:1px solid transparent;border-radius:9px;background:transparent;font-size:.75rem;text-align:left;gap:8px;color:var(--ink)}
+.profile-theme-list .theme-choice:hover{background:var(--hover)}
+.profile-theme-list .theme-choice[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent)}
+.profile-theme-list .theme-preview{width:56px;height:34px}
+.profile-menu-mode .theme-mode{padding:2px;gap:2px;align-items:center}
+.profile-menu-mode .theme-mode button{height:22px;width:28px;min-height:0;padding:0;line-height:1;font-size:17px;display:grid;place-items:center}
+.profile-menu-mode .theme-mode button[aria-label="Light mode"]{color:#a87300}
+.profile-menu-mode .theme-mode button[aria-label="Dark mode"]{color:#326bdb}
+[data-theme="dark"] .profile-menu-mode .theme-mode button[aria-label="Light mode"]{color:#ffd43b}
+[data-theme="dark"] .profile-menu-mode .theme-mode button[aria-label="Dark mode"]{color:#78a7ff}
