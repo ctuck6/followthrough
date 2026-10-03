@@ -2,7 +2,7 @@ import {AccountSwitcher, HeaderControls, useAccountViewState} from './AccountSco
 import PerformanceCards from './PerformanceCards.jsx';
 import RangePicker, {rangePresets} from './components/RangePicker.jsx';
 import React, {useState} from 'react';
-import {averageGrade, dateKey, monthCells, presetRange, consistencyStreak, fullyReviewed} from './calendar.js';
+import {averageGrade, dateKey, monthCells, presetRange, consistencyStreak, fullyReviewed, weeklyPnl} from './calendar.js';
 
 export default function Calendar({days, trades=[], summaries={}, today, onOpen}) {
   const [month,setMonth]=useAccountViewState('Calendar.jsx-month',today.slice(0,7));
@@ -13,6 +13,8 @@ export default function Calendar({days, trades=[], summaries={}, today, onOpen})
   const valid=Boolean(start&&end&&start<=end);
   const average=averageGrade(days,valid?start:'9999',valid?end:'0000');
   const streak=consistencyStreak(days,today);
+  const weeks=weeklyPnl(month,summaries);
+  const tradeDates=new Set(trades.flatMap(trade=>trade.sessions||[]));
   const byDate=new Map(days.map(day=>[day.date,day]));
   const title=new Date(`${month}-01T12:00:00`).toLocaleDateString('en-US',{month:'long',year:'numeric'});
   function move(delta){const [y,m]=month.split('-').map(Number);setMonth(dateKey(new Date(y,m-1+delta,1)).slice(0,7));}
@@ -24,13 +26,14 @@ export default function Calendar({days, trades=[], summaries={}, today, onOpen})
     </section>
     <PerformanceCards trades={trades} summaries={summaries} start={start} end={end} includePnl average/>
     <section className="panel calendar-panel" aria-label="Monthly grade calendar"><div className="calendar-toolbar"><h2 aria-live="polite">{title}</h2><div className="month-controls"><button aria-label="Previous month" onClick={()=>move(-1)}>←</button><button onClick={()=>setMonth(today.slice(0,7))}>This month</button><button aria-label="Next month" onClick={()=>move(1)}>→</button></div></div>
-      <div className="calendar-grid">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=><div className="weekday" key={d}>{d}</div>)}{monthCells(month).map((date,i)=>{
+      <div className="calendar-scroll"><div className="calendar-grid calendar-with-weeks">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat','Weekly P&L'].map(d=><div className="weekday" key={d}>{d}</div>)}{monthCells(month).map((date,i)=>{
         if(!date)return <div key={`empty-${i}`} className="calendar-spacer" aria-hidden="true"/>;
         const day=byDate.get(date),graded=day&&typeof day.score==='number',grade=graded?day.grade:null;
         const reviewed=fullyReviewed(day);
+        const hasTrades=tradeDates.has(date);
         const pnl=Object.entries(summaries[date]||{}).map(([currency,summary])=>({currency,...summary,display:new Intl.NumberFormat('en-US',{style:'currency',currency,maximumFractionDigits:2}).format(Number(summary.net))}));
-        return <button key={date} className={`calendar-day ${grade?`grade-${grade}`:''} ${date===today?'is-today':''} ${valid&&date>=start&&date<=end?'in-range':''}`} aria-label={`${date}${grade?`: Grade ${grade}, ${day.score}%`:''}${pnl.length?`, Net P&L ${pnl.map(p=>p.incomplete?'Incomplete':p.display).join(', ')}`:''}${reviewed?', Reviewed':''}. Open daily review`} aria-current={date===today?'date':undefined} onClick={()=>onOpen(date)}><span className="calendar-date">{Number(date.slice(-2))}{date===today&&<span className="today-label">Today</span>}</span><span className="calendar-day-result"><strong className="calendar-letter">{grade||''}</strong>{pnl.map(p=><span key={p.currency} className={`calendar-pnl ${Number(p.net)<0?'is-loss':Number(p.net)>0?'is-gain':''}`} title={`Net P&L · ${p.currency}`}>{p.incomplete?'Incomplete':p.display}</span>)}</span>{reviewed&&<span className="calendar-reviewed" title="Reviewed"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg></span>}</button>;
-      })}</div>
+        return <button key={date} disabled={!hasTrades} className={`calendar-day ${grade?`grade-${grade}`:''} ${date===today?'is-today':''} ${valid&&date>=start&&date<=end?'in-range':''}`} aria-label={`${date}${grade?`: Grade ${grade}, ${day.score}%`:''}${pnl.length?`, Net P&L ${pnl.map(p=>p.incomplete?'Incomplete':p.display).join(', ')}`:''}${reviewed?', Reviewed':''}${hasTrades?'. Open daily review':'. No trade data'}`} aria-current={date===today?'date':undefined} onClick={()=>onOpen(date)}><span className="calendar-date">{Number(date.slice(-2))}{date===today&&<span className="today-label">Today</span>}</span><span className="calendar-day-result"><strong className="calendar-letter">{grade||''}</strong>{pnl.map(p=><span key={p.currency} className={`calendar-pnl ${Number(p.net)<0?'is-loss':Number(p.net)>0?'is-gain':''}`} title={`Net P&L · ${p.currency}`}>{p.incomplete?'Incomplete':p.display}</span>)}</span>{reviewed&&<span className="calendar-reviewed" title="Reviewed"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg></span>}</button>;
+      }).flatMap((cell,i)=>i%7===6?[cell,<div className="calendar-week-total" key={`week-${i}`}><span>Week {Math.floor(i/7)+1}</span>{Object.entries(weeks[Math.floor(i/7)]).length?Object.entries(weeks[Math.floor(i/7)]).map(([currency,total])=><strong key={currency} className={total.incomplete?'':total.net<0?'is-loss':total.net>0?'is-gain':''}>{total.incomplete?'Incomplete':new Intl.NumberFormat('en-US',{style:'currency',currency,maximumFractionDigits:2}).format(total.net)}</strong>):<strong>—</strong>}</div>]:[cell])}</div></div>
       <div className="calendar-legend" aria-label="Grade colors">{[['A','90–100%'],['B','80–89%'],['C','70–79%'],['D','D / F · below 70%']].map(([grade,range])=><span key={grade}><i className={`grade-${grade}`} aria-hidden="true"/>{grade==='D'?range:`${grade} · ${range}`}</span>)}</div>
       <p className="footnote">Select a day to open its review. Outlined dates are in your average timeframe.</p>
     </section>

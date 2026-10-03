@@ -86,3 +86,20 @@ class BrokerageAccount(models.Model):
     source_identifier = models.CharField(max_length=150, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     last_import_at = models.DateTimeField(null=True, blank=True)
+
+
+class BrokerSync(models.Model):
+    account = models.ForeignKey(BrokerageAccount, null=True, on_delete=models.SET_NULL)
+    status = models.CharField(max_length=20, default="idle")
+    message = models.CharField(max_length=500, blank=True)
+    last_attempt = models.DateTimeField(null=True)
+    last_success = models.DateTimeField(null=True)
+    last_report_date = models.DateField(null=True)
+    scheduled_day = models.DateField(null=True)
+    retry_at = models.DateTimeField(null=True)
+    failures = models.PositiveIntegerField(default=0)
+    lease_until = models.DateTimeField(null=True)
+    run_id = models.CharField(max_length=40, blank=True)
+    requested = models.BooleanField(default=False)
+    imported = models.PositiveIntegerField(default=0)
+    duplicates = models.PositiveIntegerField(default=0)

@@ -1,3 +1,4 @@
+import BrokerSync from './BrokerSync.jsx';
 import {useAccount} from './AccountScope.jsx';
 import React, {useEffect,useState} from 'react';
 import ManualTradeForm from './ManualTradeForm.jsx';
@@ -30,7 +31,7 @@ export default function TradeJournal({day,change,ledger,request,onUpdated,notify
  <div className="trade-modes" role="group" aria-label="Trade entry mode">{['Broker sync','CSV import','Manual'].map(m=><button key={m} aria-pressed={mode===m} onClick={()=>setMode(m)}>{m}</button>)}</div>
  {mode==='Manual'&&<div className="trade-modes instrument-tabs" role="group" aria-label="Manual instrument type">{[['STK','Stock'],['OPT','Option'],['FUT','Future']].map(([value,label])=><button key={value} type="button" aria-pressed={asset===value} disabled={busy} onClick={()=>setAsset(value)}>{label}</button>)}</div>}
  {error&&<p className="alert error" role="alert">{error}</p>}<div className="trade-entry">
- {mode==='Broker sync'&&<p>Automatic broker sync is coming later. Import a CSV or add executions manually below.</p>}
+ {mode==='Broker sync'&&<BrokerSync request={request}/>}
  {mode==='CSV import'&&<><label className="attachment-upload">Choose execution CSV<input type="file" accept=".csv,text/csv" disabled={busy||!accountsReady||(accounts.length>0&&accountId==='unassigned')} onChange={read}/></label>{preview&&<div className="csv-preview"><h3>{preview.rows.length} new executions · {preview.duplicates} duplicates</h3><p>{preview.name}</p>{preview.warnings?.map(w=><p key={w} role="status">{w}</p>)}<p>Sessions: {preview.dates.join(', ')||'Already imported'}</p><button disabled={busy} className="primary" onClick={async()=>{if(await perform({csv:preview.csv,account_id:preview.account_id}))setPreview(null)}}>{busy?'Importing…':preview.rows.length?'Import executions':'View imported executions'}</button></div>}</>}
  {mode==='Manual'&&<ManualTradeForm key={`${day.date}-${asset}`} asset={asset} date={day.date} request={request} onUpdated={onUpdated} notify={notify}/>}
  </div><div className="trade-list-section"><div className="session-trades-heading"><h3>Session trades <small className="subtle">{day.date}</small></h3><div className="session-trades-summary">{Object.entries(ledger.summaries[day.date]||{}).map(([currency,s])=><div className="session-net" key={currency}><span className="session-net-label">Net P&L</span><strong className={`execution-pnl ${Number(s.net)<0?'is-loss':Number(s.net)>0?'is-gain':''}`}>{currencyMoney(s.net,currency)}</strong>{s.incomplete>0&&<small className="pnl-incomplete">Incomplete</small>}</div>)}<span className="session-trade-count">{rows.length} {rows.length===1?'trade':'trades'}</span></div></div>

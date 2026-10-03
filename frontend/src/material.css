@@ -239,3 +239,17 @@ input,textarea,select{border-radius:10px;padding:13px 14px;border-color:var(--li
 .profile-menu-mode .theme-mode button[aria-label="Dark mode"]{color:#326bdb}
 [data-theme="dark"] .profile-menu-mode .theme-mode button[aria-label="Light mode"]{color:#ffd43b}
 [data-theme="dark"] .profile-menu-mode .theme-mode button[aria-label="Dark mode"]{color:#78a7ff}
+
+.sync-details{display:grid;gap:12px;font-size:.8rem}.sync-details>div{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}.sync-details dt{color:var(--muted)}.sync-details dd{margin:0}.broker-sync h3{margin:0}
+
+.calendar-scroll{overflow-x:auto}
+.calendar-grid.calendar-with-weeks{grid-template-columns:repeat(7,minmax(0,1fr)) minmax(110px,1.15fr)}
+.calendar-week-total{display:flex;flex-direction:column;justify-content:center;gap:10px;margin-left:10px;padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--field);min-width:0}
+.calendar-week-total>span{font-size:.85rem;color:var(--muted)}
+.calendar-week-total strong{font-size:1.1rem;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+@media(max-width:900px){.calendar-grid.calendar-with-weeks{min-width:760px}}
+
+.calendar-grid .calendar-day:disabled{opacity:.55;filter:grayscale(.75);cursor:default;transform:none;box-shadow:none;background:var(--field)}
+.calendar-grid .calendar-day:disabled:hover{transform:none;box-shadow:none;background:var(--field)}
+
+.pnl-neutral,.pnl-neutral .stat-number,.pnl-neutral>strong{color:var(--muted)!important}

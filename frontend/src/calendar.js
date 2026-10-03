@@ -52,3 +52,18 @@ export function consistencyStreak(days,today){
  }
  return streak;
 }
+
+export function weeklyPnl(month, summaries) {
+ const cells=monthCells(month), weeks=[];
+ for(let i=0;i<cells.length;i+=7){
+  const totals={};
+  for(const date of cells.slice(i,i+7).filter(Boolean)){
+   for(const [currency,summary] of Object.entries(summaries[date]||{})){
+    const total=totals[currency]??={net:0,incomplete:false};
+    total.net+=Number(summary.net);total.incomplete ||= Boolean(summary.incomplete);
+   }
+  }
+  weeks.push(totals);
+ }
+ return weeks;
+}

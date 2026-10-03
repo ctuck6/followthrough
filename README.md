@@ -268,3 +268,21 @@ restores normal chart navigation. Undo/Redo also lets you recover cleared drawin
 within the current modal session. Drawings are anchored to candle times and prices
 and saved in this browser's local storage per trade and chart date; they are not
 stored in the journal database or shared between Chrome profiles.
+
+
+### IBKR automatic imports
+
+Set `IBKR_FLEX_TOKEN` and `IBKR_FLEX_QUERY_ID` in the ignored `backend/.env`.
+Use an execution-level CSV Flex query with the same columns as manual IBKR imports,
+including TradeID, AssetClass, Buy/Sell, Quantity, Price, OrderTime, and the account
+identifier. Configure the query for one account. Credentials remain on the backend.
+
+The backend checks on startup (with a ten-minute restart cooldown), weekdays at
+1:15 p.m. America/Los_Angeles, and from Trade journal → Broker sync → Sync now.
+The backend must be running; a sleeping machine catches up when it resumes.
+Imports request at least 30 days, expanding after downtime to at most 365 days.
+Older history can be imported manually. TradeIDs are deduplicated within the account.
+An empty or delayed report does not mean the current session is complete; the sync
+view shows the latest execution date separately from the last successful request.
+Failures retry up to three times with increasing delays. A database lease prevents
+concurrent server processes from importing the same report simultaneously.

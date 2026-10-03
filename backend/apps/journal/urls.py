@@ -1,3 +1,4 @@
+from .broker_sync import sync_status
 from .profile_photo import photo
 from django.urls import path
 
@@ -8,6 +9,7 @@ from .statistics import statistics
 from .strategies import strategies, strategy_detail, trade_strategy
 
 urlpatterns = [
+    path("api/broker-sync/", sync_status),
     path("api/accounts/", accounts),
     path("api/accounts/<int:pk>/", account_detail),
     path("api/accounts/<int:pk>/data/", account_data),
