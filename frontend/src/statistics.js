@@ -19,3 +19,18 @@ export function weekdayPnl(rows) {
  const groups=groupPnl(rows.map(r=>({...r,weekday:days[new Date(`${r.date}T12:00:00Z`).getUTCDay()]})),'weekday');
  return [...days.slice(1),days[0]].map(label=>groups.find(r=>r.label===label)||{label,net:0,count:0});
 }
+
+export function sessionHours(rows) {
+ const clock=m=>`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
+ return [['Premarket',240,570],['Regular session',570,960],['After hours',960,1200],['Overnight',0,240],['Overnight',1200,1440]].reduce((sessions,[title,start,end])=>{
+  let session=sessions.find(s=>s.title===title);
+  if(!session){session={title,rows:[]};sessions.push(session)}
+  for(let minute=start;minute<end;){
+   const next=Math.min(end,(Math.floor(minute/60)+1)*60);
+   const trades=rows.filter(r=>{const m=r.entry_minute??Number(r.hour)*60;return m>=minute&&m<next});
+   session.rows.push({label:`${clock(minute)}–${clock(next)}`,net:trades.reduce((sum,r)=>sum+Number(r.net),0),count:trades.length,trades});
+   minute=next;
+  }
+  return sessions;
+ },[]).filter(s=>s.title!=='Overnight'||s.rows.some(r=>r.count));
+}

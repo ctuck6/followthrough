@@ -253,3 +253,16 @@ input,textarea,select{border-radius:10px;padding:13px 14px;border-color:var(--li
 .calendar-grid .calendar-day:disabled:hover{transform:none;box-shadow:none;background:var(--field)}
 
 .pnl-neutral,.pnl-neutral .stat-number,.pnl-neutral>strong{color:var(--muted)!important}
+.stat-trades-modal{width:min(850px,94vw)}.stat-trades-list{max-height:60vh;overflow:auto}.stat-trade-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;align-items:center;gap:12px;text-align:left}.stat-pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px}.report-curve svg{touch-action:pan-y}.stat-trade-row:hover{background:var(--hover);transform:none}
+
+.statistics-view .stat-trade-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr}.stat-trade-row time{font-size:.8rem}.stat-trade-row .ticker-pill{justify-self:start}@media(max-width:600px){.statistics-view .stat-trade-row{grid-template-columns:1fr 1fr}.stat-pagination{flex-wrap:wrap}}
+
+.stat-trade-headers{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:12px;padding:12px;color:var(--muted);font-size:.8rem;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--surface);z-index:1}
+.ticker-search-heading{display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:20px}.ticker-search-heading h2{margin:0}.ticker-search-heading .report-search{margin:0}
+.session-report{margin-bottom:18px}.session-report summary{cursor:pointer;font-weight:600;padding:8px}.session-report summary span{float:right;color:var(--muted);font-size:.8rem;font-weight:400}.session-report>.report-bars{border:0;box-shadow:none;margin:12px 0 0;padding:0;background:transparent}
+@media(max-width:600px){.stat-trade-headers{grid-template-columns:1fr 1fr}.ticker-search-heading{flex-wrap:wrap}}
+
+.ticker-search-heading{justify-content:flex-start;gap:18px}.ticker-search-heading .report-search{display:flex;flex-direction:row;align-items:center;gap:10px;min-width:0}.ticker-search-heading .report-search>span{white-space:nowrap;flex-shrink:0}.ticker-search-heading .report-search input{width:220px;max-width:100%;min-width:0;margin:0}
+.stat-pagination{display:flex;flex-direction:column;border-top:1px solid var(--line);padding-top:16px;gap:12px}.stat-page-count{font-size:.8rem;color:var(--muted)}.stat-page-buttons{display:flex;justify-content:center;flex-wrap:wrap;gap:6px;max-height:150px;overflow:auto}.stat-page-buttons button{display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:36px;padding:0 10px;border-radius:10px;text-align:center;line-height:1;gap:0;transform:none}.stat-page-buttons button[aria-current="page"]{background:var(--accent-soft);color:var(--ink);border-color:var(--accent);font-weight:700}
+
+.stat-page-buttons .stat-page-arrow{border:1px solid var(--line);background:transparent;color:var(--ink);min-width:40px}.stat-page-arrow svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}.stat-page-buttons .stat-page-arrow:hover:not(:disabled){border-color:var(--accent);background:var(--hover)}.stat-page-buttons .stat-page-arrow:disabled{opacity:.35;background:transparent}

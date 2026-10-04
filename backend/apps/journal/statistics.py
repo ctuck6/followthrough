@@ -23,7 +23,9 @@ def statistics(request: HttpRequest) -> JsonResponse:
     except ValueError:
         return JsonResponse({"error": "Choose a valid date range."}, status=400)
     links = dict(
-        TradeStrategy.objects.select_related("strategy").values_list("trade_key", "strategy__name")
+        TradeStrategy.objects.select_related("strategy").values_list(
+            "trade_key", "strategy__name"
+        )
     )
     local_zone = ZoneInfo(configuration()[1])
     rows = []
@@ -38,10 +40,10 @@ def statistics(request: HttpRequest) -> JsonResponse:
             .replace(tzinfo=local_zone)
             .astimezone(ZoneInfo("America/New_York"))
         )
-        minute = opened.hour * 60 + opened.minute
-        hour = str(opened.hour) if 570 <= minute < 960 else "outside"
+        hour = str(opened.hour)
         rows.append(
             {
+                "trade_id": trade["trade_id"],
                 "date": closed,
                 "net": str(Decimal(trade["net"])),
                 "currency": trade["currency"],
@@ -52,6 +54,7 @@ def statistics(request: HttpRequest) -> JsonResponse:
                 if trade["asset_class"] == "OPT"
                 else "Stocks",
                 "hour": hour,
+                "entry_minute": opened.hour * 60 + opened.minute,
                 "strategy": links.get(trade["trade_id"], "No strategy"),
             }
         )

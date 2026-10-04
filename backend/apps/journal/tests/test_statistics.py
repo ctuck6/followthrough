@@ -6,7 +6,10 @@ from apps.journal.models import Strategy, TradeStrategy
 
 
 class StatisticsTests(TestCase):
-    @patch("apps.journal.statistics.configuration", return_value=("", "America/Los_Angeles"))
+    @patch(
+        "apps.journal.statistics.configuration",
+        return_value=("", "America/Los_Angeles"),
+    )
     @patch("apps.journal.statistics.ledger")
     def test_closed_range_strategy_and_market_hours(
         self, mock_ledger: object, config: object
@@ -42,14 +45,31 @@ class StatisticsTests(TestCase):
         rows = response.json()["rows"]
         self.assertEqual(len(rows), 2)
         self.assertEqual(rows[0]["hour"], "9")
+        self.assertEqual(rows[0]["trade_id"], "1")
+        self.assertEqual(rows[1]["trade_id"], "2")
         self.assertEqual(rows[0]["strategy"], "Breakout")
         self.assertEqual(rows[0]["instrument"], "Options")
         self.assertEqual(rows[0]["net"], "-12.50")
-        self.assertEqual(rows[1]["hour"], "outside")
+        self.assertEqual(rows[1]["hour"], "8")
         self.assertEqual(rows[1]["strategy"], "No strategy")
+        for local_time, expected in [
+            ("01:00:00", "4"),
+            ("14:00:00", "17"),
+            ("20:00:00", "23"),
+        ]:
+            mock_ledger.return_value = {
+                "trades": [{**base, "order_time": f"2026-09-22 {local_time}"}]
+            }
+            result = self.client.get("/api/statistics/?start=2026-09-22&end=2026-09-22")
+            self.assertEqual(result.json()["rows"][0]["hour"], expected)
 
     def test_invalid_range(self) -> None:
-        self.assertEqual(self.client.get("/api/statistics/?start=bad&end=bad").status_code, 400)
         self.assertEqual(
-            self.client.get("/api/statistics/?start=2026-09-22&end=2026-09-01").status_code, 400
+            self.client.get("/api/statistics/?start=bad&end=bad").status_code, 400
+        )
+        self.assertEqual(
+            self.client.get(
+                "/api/statistics/?start=2026-09-22&end=2026-09-01"
+            ).status_code,
+            400,
         )
