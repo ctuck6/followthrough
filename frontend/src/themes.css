@@ -1,10 +1,10 @@
 /* Shared palette tokens apply to every appearance mode. */
 :root{--hover:color-mix(in srgb,var(--accent) 9%,var(--surface))}
 aside{background:var(--sidebar)}
-nav button.active,nav button.active:hover{background:var(--nav-active);color:var(--sidebar)}
-nav button:hover{background:color-mix(in srgb,var(--nav-active) 12%,var(--sidebar))}
+nav button.active,nav button.active:hover:not(:disabled):not([aria-disabled="true"]){background:var(--nav-active);color:var(--sidebar)}
+nav button:hover:not(:disabled):not([aria-disabled="true"]){background:color-mix(in srgb,var(--nav-active) 12%,var(--sidebar))}
 :root .primary{background:var(--accent);border-color:var(--accent);color:var(--canvas)}
-:root .primary:hover{background:color-mix(in srgb,var(--accent) 85%,var(--ink))}
+:root .primary:hover:not(:disabled):not([aria-disabled="true"]){background:color-mix(in srgb,var(--accent) 85%,var(--ink))}
 :root .stats .grade-stat,:root .step,:root .grade-badge{background:var(--accent-soft);color:var(--accent)}
 :root .positive,:root .trade-pnl-hero.is-gain>strong{color:var(--pnl-positive)}
 :root .negative,:root .performance-value.is-loss,:root .trade-pnl-hero.is-loss>strong{color:var(--pnl-negative)}

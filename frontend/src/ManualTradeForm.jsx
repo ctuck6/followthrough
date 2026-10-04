@@ -3,7 +3,7 @@ import React,{useEffect,useState} from 'react';
 import Select from './components/Select.jsx';
 import DatePicker from './components/DatePicker.jsx';
 import TimePicker from './components/TimePicker.jsx';
-export default function ManualTradeForm({asset,date,request,onUpdated,notify}){
+export default function ManualTradeForm({asset,date,request,onUpdated,notify,onBusyChange}){
  const {accountId}=useAccount();
  const blank=()=>({id:crypto.randomUUID(),asset,symbol:'',side:'BUY',quantity:'',price:'',commission:'0',executed_at:`${date}T09:30:00`,expiry:date,strike:'',put_call:'C',multiplier:asset==='OPT'?'100':asset==='FUT'?'':'1'});
  const storage=`followthrough-manual-fill-${accountId}-${date}-${asset}`;
@@ -11,7 +11,8 @@ export default function ManualTradeForm({asset,date,request,onUpdated,notify}){
  useEffect(()=>{try{localStorage.setItem(storage,JSON.stringify(form))}catch{}},[form,storage]);
  const update=(key,value)=>setForm(f=>({...f,[key]:value}));
  const field=(key,label,extra={})=><label>{label}<input required disabled={busy} value={form[key]} onChange={e=>update(key,e.target.value)} {...extra}/></label>;
- async function submit(e){e.preventDefault();setBusy(true);setError('');try{const result=await request('/api/manual-executions/','POST',{...form,multiplier:asset==='OPT'?'100':asset==='FUT'?form.multiplier:'1'});await onUpdated(result,[form.executed_at.slice(0,10)]);notify('Execution saved.');setForm(blank())}catch(e){setError(e.message)}finally{setBusy(false)}}
+ useEffect(()=>{onBusyChange?.(busy);return()=>onBusyChange?.(false)},[busy,onBusyChange]);
+ async function submit(e){e.preventDefault();if(busy)return;setBusy(true);setError('');try{const result=await request('/api/manual-executions/','POST',{...form,multiplier:asset==='OPT'?'100':asset==='FUT'?form.multiplier:'1'});await onUpdated(result,[form.executed_at.slice(0,10)]);notify('Execution saved.');setForm(blank())}catch(e){setError(e.message)}finally{setBusy(false)}}
  return <form className="execution-form manual-trade-form" aria-label={`${asset==='STK'?'Stock':asset==='FUT'?'Future':'Option'} execution entry`} onSubmit={submit}>
  <h3 className="form-wide">{asset==='STK'?'Stock execution':asset==='FUT'?'Future execution':'Option execution'}</h3>
  {error&&<p className="alert error form-wide" role="alert">{error}</p>}
