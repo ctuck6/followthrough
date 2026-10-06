@@ -280,9 +280,18 @@ identifier. Configure the query for one account. Credentials remain on the backe
 The backend checks on startup (with a ten-minute restart cooldown), weekdays at
 1:15 p.m. America/Los_Angeles, and from Trade journal → Broker sync → Sync now.
 The backend must be running; a sleeping machine catches up when it resumes.
-Imports request at least 30 days, expanding after downtime to at most 365 days.
-Older history can be imported manually. TradeIDs are deduplicated within the account.
-An empty or delayed report does not mean the current session is complete; the sync
-view shows the latest execution date separately from the last successful request.
+`IBKR_FLEX_QUERY_ID` is the Trade Confirmation query (Today).
+Optionally set `IBKR_FLEX_ACTIVITY_QUERY_ID` for an Activity query (365 days).
+Both use their configured periods without API overrides. Configure the Activity
+query as execution-level Trades CSV with matching columns; TradePrice and
+IBCommission are also accepted. Both reports must identify the same account.
+During the trial, imports are limited to today and the latest five historical
+trading dates present in the Activity report. TradeIDs are deduplicated within
+the account. Activity DateTime, IBOrderID and Open/CloseIndicator fields are
+normalized. Harmless order ID/alias metadata can update; differences in financial
+values, timing or position effect are held for review while other fills import.
+Conflicts are shown in the broker sync section.
+An empty or delayed report does not mean the current session is complete; Last import
+updates only for new executions; Last successful sync tracks report checks.
 Failures retry up to three times with increasing delays. A database lease prevents
 concurrent server processes from importing the same report simultaneously.

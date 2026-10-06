@@ -35,5 +35,6 @@ export default function BrokerSync({request}){
  {status&&!status.configured&&<p role="status">Add your IBKR Flex credentials to backend/.env.</p>}
  {status?.configured&&!status.available&&<p role="status">Select the IBKR account linked to your Flex query.</p>}
  {status?.available&&status.message&&<p role={status.status==='error'?'alert':'status'} className={status.status==='error'?'alert error':'subtle'}>{status.message}{status.status==='success'?` ${status.imported} imported · ${status.duplicates} duplicates skipped.`:''}</p>}
+ {status?.available&&status.conflicts?.length>0&&<details><summary>Executions needing review ({status.conflicts.length})</summary><ul>{status.conflicts.map((c,i)=><li key={i}>{c.symbol} · {c.date} · {c.fields.join(', ')}</li>)}</ul></details>}
  </div>;
 }

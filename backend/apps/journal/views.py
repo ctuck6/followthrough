@@ -33,7 +33,7 @@ def rules(request):
     try:
         rule = services.save_rule(payload(request))
 
-        return JsonResponse({"id": rule.id, "text": rule.text, "weight": rule.weight}, status=201)
+        return JsonResponse({"id": rule.id, "text": rule.text, "weight": rule.weight, "position": rule.position}, status=201)
     except (ValueError, TypeError, Rule.DoesNotExist) as exc:
         return JsonResponse({"error": str(exc)}, status=400)
 
@@ -152,7 +152,9 @@ def executions(request):
             result = engine.import_rows(
                 scoped_rows(rows, account_id) if "csv" in data else rows, account_id
             )
-            record_import(account, rows)
+            if result["imported"] > 0:
+                record_import(account, rows)
+
         return JsonResponse({**result, **engine.ledger(request_account(request))}, status=201)
     except (ValueError, TypeError, KeyError, InvalidOperation) as exc:
         return JsonResponse({"error": str(exc)}, status=400)
@@ -289,5 +291,18 @@ def remove_executions(request):
 
     try:
         return JsonResponse(delete_executions(payload(request), request_account(request)))
+    except (ValueError, TypeError) as exc:
+        return JsonResponse({"error": str(exc)}, status=400)
+
+
+@require_http_methods(["POST"])
+def reorder_rules(request):
+    try:
+        services.reorder_rules(payload(request).get("ids"))
+
+        return JsonResponse({
+            "rules": list(Rule.objects.filter(active=True).values("id", "text", "weight")),
+            "rule_order": dict(Rule.objects.values_list("id", "position")),
+        })
     except (ValueError, TypeError) as exc:
         return JsonResponse({"error": str(exc)}, status=400)

@@ -15,6 +15,11 @@ REPORT = HEADER + "1,Test,USD,STK,ABC,BUY,10,10,20261002;093000,-1\n"
 
 
 class FlexTests(TestCase):
+    def setUp(self) -> None:
+        activity = patch("apps.journal.broker_sync.activity_query_id", return_value="")
+        activity.start()
+        self.addCleanup(activity.stop)
+
     def test_csv_dates_empty_and_validation(self) -> None:
         self.assertEqual(parse_report(REPORT)[0]["session_date"], "2026-10-02")
         self.assertEqual(parse_report(HEADER), [])
@@ -28,9 +33,7 @@ class FlexTests(TestCase):
     @patch("apps.journal.ibkr_flex.time.sleep")
     @patch("apps.journal.ibkr_flex.credentials", return_value=("secret", "123"))
     @patch("apps.journal.ibkr_flex.fetch")
-    def test_generation_polling(
-        self, fetch: object, creds: object, sleep: object
-    ) -> None:
+    def test_generation_polling(self, fetch: object, creds: object, sleep: object) -> None:
         fetch.side_effect = [
             "<FlexStatementResponse><Status>Success</Status><ReferenceCode>ref</ReferenceCode></FlexStatementResponse>",
             "<FlexStatementResponse><ErrorCode>1019</ErrorCode></FlexStatementResponse>",
@@ -38,6 +41,7 @@ class FlexTests(TestCase):
         ]
         self.assertEqual(download_report(), REPORT)
         self.assertEqual(sleep.call_count, 2)
+        self.assertEqual(fetch.call_args_list[0].args[1], {"t": "secret", "q": "123", "v": "3"})
         self.assertEqual(fetch.call_args.args[0], "GetStatement")
 
     def test_schedule_dst_weekends_and_lease(self) -> None:
@@ -90,9 +94,7 @@ class FlexTests(TestCase):
         "apps.journal.broker_sync.download_report",
         side_effect=RuntimeError("token=secret"),
     )
-    def test_errors_redacted_and_retries_bounded(
-        self, download: object, creds: object
-    ) -> None:
+    def test_errors_redacted_and_retries_bounded(self, download: object, creds: object) -> None:
         state = BrokerSync.objects.create(pk=1, requested=True, failures=3)
         run_sync()
         state.refresh_from_db()
@@ -132,11 +134,67 @@ class FlexTests(TestCase):
         "apps.journal.broker_sync.download_report",
         side_effect=FlexError("Token expired", "1012"),
     )
-    def test_expired_token_does_not_retry(
-        self, download: object, creds: object
-    ) -> None:
+    def test_expired_token_does_not_retry(self, download: object, creds: object) -> None:
         run_sync(startup=True)
         state = BrokerSync.objects.get(pk=1)
         self.assertEqual(state.status, "error")
         self.assertIsNone(state.retry_at)
         self.assertEqual(Execution.objects.count(), 0)
+
+    @patch("apps.journal.broker_sync.credentials", return_value=("secret", "123"))
+    @patch("apps.journal.broker_sync.download_report")
+    def test_import_timestamp_only_changes_for_new_executions(
+        self, download: object, creds: object
+    ) -> None:
+        previous = timezone.now() - timedelta(days=1)
+        account = BrokerageAccount.objects.create(
+            name="Main", broker="ibkr", last_import_at=previous
+        )
+        state = BrokerSync.objects.create(pk=1, account=account, requested=True)
+        download.return_value = HEADER
+        run_sync()
+        account.refresh_from_db()
+        self.assertEqual(account.last_import_at, previous)
+        download.return_value = REPORT
+        BrokerSync.objects.filter(pk=1).update(requested=True)
+        run_sync()
+        account.refresh_from_db()
+        imported_at = account.last_import_at
+        self.assertGreater(imported_at, previous)
+        BrokerSync.objects.filter(pk=1).update(requested=True)
+        run_sync()
+        account.refresh_from_db()
+        state.refresh_from_db()
+        self.assertEqual(account.last_import_at, imported_at)
+        self.assertEqual(state.imported, 0)
+        self.assertEqual(state.duplicates, 1)
+        self.assertGreater(state.last_success, imported_at)
+
+    @patch("apps.journal.broker_sync.credentials", return_value=("secret", "today"))
+    @patch("apps.journal.broker_sync.activity_query_id", return_value="history")
+    @patch("apps.journal.broker_sync.download_report")
+    def test_dual_query_deduplicates_and_rolls_back_on_failure(
+        self, download: object, activity: object, creds: object
+    ) -> None:
+        account = BrokerageAccount.objects.create(name="Main", broker="ibkr")
+        state = BrokerSync.objects.create(pk=1, account=account, requested=True)
+        download.side_effect = [REPORT, FlexError("Historical report unavailable")]
+        run_sync()
+        self.assertEqual(Execution.objects.count(), 0)
+        account.refresh_from_db()
+        self.assertIsNone(account.last_import_at)
+        BrokerSync.objects.filter(pk=1).update(requested=True)
+        download.side_effect = [
+            REPORT,
+            REPORT + REPORT.splitlines(True)[1].replace("1,Test", "2,Test"),
+        ]
+        run_sync()
+        state.refresh_from_db()
+        self.assertEqual(state.status, "success")
+        self.assertEqual(state.imported, 2)
+        self.assertEqual(state.duplicates, 0)
+        self.assertEqual(download.call_args.kwargs, {"query_id": "history"})
+
+    def test_activity_column_aliases_match_confirmation(self) -> None:
+        activity = REPORT.replace("Price,", "TradePrice,").replace("Commission", "IBCommission")
+        self.assertEqual(parse_report(activity), parse_report(REPORT))

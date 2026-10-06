@@ -4,6 +4,7 @@ from .serializers import serialize, serialize_attachment
 
 def journal_state(account_id=None):
     return {
+        "rule_order": dict(Rule.objects.values_list("id", "position")),
         "rules": list(Rule.objects.filter(active=True).values("id", "text", "weight")),
         "days": [
             serialize(day) for day in Day.objects.filter(account_id=account_id).order_by("-date")

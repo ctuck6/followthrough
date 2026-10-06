@@ -271,3 +271,5 @@ input,textarea,select{border-radius:10px;padding:13px 14px;border-color:var(--li
 @media(max-width:480px){.stat-page-buttons{gap:3px}.stat-page-buttons button,.stat-page-buttons .stat-page-arrow{min-width:28px;height:32px;padding:0 5px}.stat-page-gap{width:12px}.app-modal.stat-trades-modal{padding:16px}}
 
 .report-curve .curve-tooltip rect{fill:var(--surface);stroke:var(--line);filter:drop-shadow(0 3px 5px rgb(0 0 0 / .25))}.report-curve .curve-tooltip text{fill:var(--ink);font-size:13px;font-weight:700}.report-curve .curve-tooltip tspan{font-size:inherit;font-weight:inherit}.report-curve .curve-tooltip .curve-tooltip-date{font-weight:700}.report-curve circle:focus{stroke:#fff;stroke-width:2}
+
+.rule-drag-handle{display:grid;place-items:center;padding:6px;width:32px;min-height:32px;flex-shrink:0;border:0;background:transparent;color:var(--muted);cursor:grab}.rule-drag-handle svg{width:20px;height:20px;fill:currentColor}.rule-drag-handle:active:not(:disabled){cursor:grabbing}.editable-rule-row.rule-drop-target{box-shadow:inset 0 2px var(--accent);background:var(--accent-soft)}

@@ -20,12 +20,15 @@ def save_rule(data):
         raise ValueError("Enter a rule and a weight from 1 to 10.")
 
     with transaction.atomic():
+        position = max(Rule.objects.values_list("position", flat=True), default=-1) + 1
+
         if data.get("id"):
             old = Rule.objects.get(id=data["id"], active=True)
+            position = old.position
             old.active = False
             old.save()
 
-        rule = Rule.objects.create(text=text, weight=weight)
+        rule = Rule.objects.create(text=text, weight=weight, position=position)
 
     return rule
 
@@ -148,3 +151,27 @@ def delete_attachment(day, attachment_id, trade_key="", account_id=None):
         )
         attachment.file.delete(save=False)
         attachment.delete()
+
+
+def reorder_rules(ids: list[int]) -> None:
+    """Reorder rule versions together without changing saved assessments."""
+    with transaction.atomic():
+        rules = list(Rule.objects.select_for_update().all())
+        active = {rule.id: rule for rule in rules if rule.active}
+
+        if (
+            not isinstance(ids, list)
+            or any(type(value) is not int for value in ids)
+            or len(ids) != len(active)
+            or set(ids) != set(active)
+        ):
+            raise ValueError("The rule list changed. Refresh and try again.")
+
+        positions = {active[key].position: index for index, key in enumerate(ids)}
+        retired = sorted({rule.position for rule in rules} - positions.keys())
+        positions.update({value: len(ids) + i for i, value in enumerate(retired)})
+
+        for rule in rules:
+            rule.position = positions[rule.position]
+
+        Rule.objects.bulk_update(rules, ["position"])

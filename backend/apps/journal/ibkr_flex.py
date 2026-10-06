@@ -31,7 +31,7 @@ class NoRedirect(HTTPRedirectHandler):
         return None
 
 
-def credentials() -> tuple[str, str]:
+def flex_setting(key: str) -> str:
     values = {}
     path = settings.BASE_DIR / ".env"
 
@@ -39,13 +39,18 @@ def credentials() -> tuple[str, str]:
         for line in path.read_text().splitlines():
             name, separator, value = line.partition("=")
 
-            if separator and name.strip() in {"IBKR_FLEX_TOKEN", "IBKR_FLEX_QUERY_ID"}:
+            if separator and name.strip() == key:
                 values[name.strip()] = value.strip().strip("\"'")
 
-    return tuple(
-        os.environ.get(key, values.get(key, ""))
-        for key in ("IBKR_FLEX_TOKEN", "IBKR_FLEX_QUERY_ID")
-    )
+    return os.environ.get(key, values.get(key, ""))
+
+
+def credentials() -> tuple[str, str]:
+    return flex_setting("IBKR_FLEX_TOKEN"), flex_setting("IBKR_FLEX_QUERY_ID")
+
+
+def activity_query_id() -> str:
+    return flex_setting("IBKR_FLEX_ACTIVITY_QUERY_ID")
 
 
 def fetch(endpoint: str, parameters: dict) -> str:
@@ -63,9 +68,7 @@ def fetch(endpoint: str, parameters: dict) -> str:
 
         return data.decode("utf-8-sig")
     except (HTTPError, URLError, TimeoutError, OSError, UnicodeError):
-        raise FlexError(
-            "Could not reach IBKR Flex. Check your connection and try again."
-        ) from None
+        raise FlexError("Could not reach IBKR Flex. Check your connection and try again.") from None
 
 
 def xml_response(content: str) -> ET.Element:
@@ -89,20 +92,17 @@ def error_message(root: ET.Element) -> str:
         "1020": "IBKR could not validate the Flex query. Check the token and Query ID.",
     }
 
-    return messages.get(
-        code, "IBKR could not generate this Flex report. Check its configuration."
-    )
+    return messages.get(code, "IBKR could not generate this Flex report. Check its configuration.")
 
 
-def download_report(period: int = 30) -> str:
+def download_report(query_id: str | None = None) -> str:
     token, query = credentials()
+    query = query_id or query
 
     if not token or not query:
         raise FlexError("Add IBKR_FLEX_TOKEN and IBKR_FLEX_QUERY_ID to backend/.env.")
 
-    root = xml_response(
-        fetch("SendRequest", {"t": token, "q": query, "v": "3", "p": str(period)})
-    )
+    root = xml_response(fetch("SendRequest", {"t": token, "q": query, "v": "3"}))
 
     if root.findtext("Status") != "Success":
         raise FlexError(error_message(root), root.findtext("ErrorCode", ""))
@@ -136,9 +136,7 @@ def flex_date(value: str, timestamp: bool = False) -> str:
         return ""
 
     formats = (
-        ("%Y%m%d;%H%M%S", "%Y%m%d;%H:%M:%S", "%Y-%m-%d;%H:%M:%S")
-        if timestamp
-        else ("%Y%m%d",)
+        ("%Y%m%d;%H%M%S", "%Y%m%d;%H:%M:%S", "%Y-%m-%d;%H:%M:%S") if timestamp else ("%Y%m%d",)
     )
 
     for fmt in formats:
@@ -161,7 +159,12 @@ def parse_report(content: str) -> list[dict]:
     reader = csv.DictReader(io.StringIO(content.lstrip("\ufeff")))
     required = {"TradeID", "AssetClass", "Buy/Sell", "Quantity", "Price", "OrderTime"}
 
-    if not required <= set(reader.fieldnames or []):
+    fields = set(reader.fieldnames or [])
+
+    if "TradePrice" in fields:
+        fields.add("Price")
+
+    if not required <= fields:
         raise FlexError(
             "The Flex query must include execution-level TradeID, AssetClass, Buy/Sell, Quantity, Price and OrderTime columns."
         )
@@ -174,6 +177,23 @@ def parse_report(content: str) -> list[dict]:
     for index, row in enumerate(reader, 2):
         if None in row or None in row.values():
             raise FlexError(f"Flex report row {index} has an incorrect column count.")
+
+        for target, source in (
+            ("Price", "TradePrice"),
+            ("Date/Time", "DateTime"),
+            ("OrderID", "IBOrderID"),
+            ("Code", "Notes/Codes"),
+            ("Commission", "IBCommission"),
+            ("CommissionCurrency", "IBCommissionCurrency"),
+        ):
+            if not row.get(target) and row.get(source):
+                row[target] = row[source]
+
+        if not row.get("PositionEffect") and row.get("Open/CloseIndicator"):
+            indicator = row["Open/CloseIndicator"].strip().upper()
+            if indicator not in {"O", "C"}:
+                raise FlexError(f"Flex report row {index} has an unsupported position effect.")
+            row["PositionEffect"] = {"O": "OPEN", "C": "CLOSE"}[indicator]
 
         for name in ("OrderTime", "Date/Time"):
             if row.get(name):

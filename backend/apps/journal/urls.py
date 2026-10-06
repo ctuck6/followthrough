@@ -18,6 +18,7 @@ urlpatterns = [
     path("api/strategies/<int:pk>/", strategy_detail),
     path("api/trades/<str:key>/strategy/", trade_strategy),
     path("api/trades/<str:key>/chart/", trade_chart),
+    path("api/rules/reorder/", views.reorder_rules),
     path("api/rules/delete/", views.remove_rules),
     path("api/executions/delete/", views.remove_executions),
     path("api/profile/", views.profile),

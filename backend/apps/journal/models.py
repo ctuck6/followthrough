@@ -2,6 +2,11 @@ from django.db import models
 
 
 class Rule(models.Model):
+    position = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["position", "id"]
+
     text = models.CharField(max_length=300)
     weight = models.PositiveSmallIntegerField(default=1)
     active = models.BooleanField(default=True)
@@ -89,6 +94,7 @@ class BrokerageAccount(models.Model):
 
 
 class BrokerSync(models.Model):
+    conflicts = models.JSONField(default=list)
     account = models.ForeignKey(BrokerageAccount, null=True, on_delete=models.SET_NULL)
     status = models.CharField(max_length=20, default="idle")
     message = models.CharField(max_length=500, blank=True)

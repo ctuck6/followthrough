@@ -12,8 +12,8 @@ from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
 from .accounts import request_account, scoped_rows
-from .executions import import_rows
-from .ibkr_flex import FlexError, credentials, download_report, parse_report
+from .flex_import import reconcile_flex
+from .ibkr_flex import FlexError, activity_query_id, credentials, download_report, parse_report
 from .models import BrokerageAccount, BrokerSync
 
 PACIFIC = ZoneInfo("America/Los_Angeles")
@@ -43,10 +43,7 @@ def resolve_account(state: BrokerSync, rows: list[dict]) -> BrokerageAccount:
     if source and account.source_identifier and account.source_identifier != source:
         raise FlexError("This Flex report belongs to a different brokerage account.")
 
-    if (
-        source
-        and accounts.filter(source_identifier=source).exclude(pk=account.pk).exists()
-    ):
+    if source and accounts.filter(source_identifier=source).exclude(pk=account.pk).exists():
         raise FlexError("This Flex report is already linked to another account.")
 
     return account
@@ -94,8 +91,6 @@ def run_sync(startup: bool = False) -> None:
             state.scheduled_day = local.date()
 
         intended_account = state.account_id
-        gap = (now - state.last_success).days if state.last_success else 0
-        period = min(365, max(30, gap + 7))
         state.run_id = run_id
         state.lease_until = now + timedelta(minutes=10)
         state.last_attempt = now
@@ -106,7 +101,25 @@ def run_sync(startup: bool = False) -> None:
         state.save()
 
     try:
-        rows = parse_report(download_report(period=period))
+        # Each report uses its own configured period (Today vs historical).
+        rows = parse_report(download_report())
+        historical_query = activity_query_id()
+
+        if historical_query:
+            if historical_query == credentials()[1]:
+                raise FlexError("Activity and Trade Confirmation Query IDs must differ.")
+
+            historical = parse_report(download_report(query_id=historical_query))
+            # Trial scope: today plus the last five reported trading sessions.
+            dates = sorted(
+                {
+                    r["session_date"]
+                    for r in historical
+                    if r["session_date"] < local.date().isoformat()
+                }
+            )[-5:]
+            rows = [r for r in rows if r["session_date"] == local.date().isoformat()]
+            rows.extend(r for r in historical if r["session_date"] in dates)
 
         with transaction.atomic():
             BrokerageAccount.objects.filter(pk=-1).update(name="")
@@ -119,22 +132,27 @@ def run_sync(startup: bool = False) -> None:
                 raise FlexError("The linked account changed during sync. Please retry.")
 
             account = resolve_account(state, rows)
-            result = import_rows(scoped_rows(rows, account.pk), account.pk)
+            result = reconcile_flex(scoped_rows(rows, account.pk), account.pk)
 
             if rows:
                 account.source_identifier = rows[0]["account"]
 
-            account.last_import_at = timezone.now()
+            if result["imported"] > 0 or result["updated"] > 0:
+                account.last_import_at = timezone.now()
+
             account.save(update_fields=["source_identifier", "last_import_at"])
             state.account = account
             state.status = "success"
+            state.conflicts = result["conflicts"]
             state.message = (
-                "Sync complete." if rows else "Report contains no executions."
+                f"Sync finished with {len(state.conflicts)} executions needing review."
+                if state.conflicts
+                else "Sync complete."
+                if rows
+                else "Report contains no executions."
             )
             state.last_success = timezone.now()
-            state.last_report_date = max(
-                (r["session_date"] for r in rows), default=None
-            )
+            state.last_report_date = max((r["session_date"] for r in rows), default=None)
             state.imported = result["imported"]
             state.duplicates = result["duplicates"]
             state.failures = 0
@@ -164,9 +182,7 @@ def run_sync(startup: bool = False) -> None:
             state.retry_at = (
                 timezone.now() + timedelta(minutes=15 * state.failures)
                 if state.failures <= 3
-                and not (
-                    isinstance(error, FlexError) and error.code in {"1012", "1015"}
-                )
+                and not (isinstance(error, FlexError) and error.code in {"1012", "1015"})
                 else None
             )
             state.save()
@@ -182,9 +198,7 @@ def worker() -> None:
             run_sync(startup=startup)
             startup = False
         except Exception:  # noqa: BLE001 — keep scheduler alive without logging secrets
-            logging.getLogger(__name__).warning(
-                "IBKR sync scheduler unavailable; retrying."
-            )
+            logging.getLogger(__name__).warning("IBKR sync scheduler unavailable; retrying.")
         finally:
             close_old_connections()
 
@@ -221,20 +235,14 @@ def sync_status(request: HttpRequest) -> JsonResponse:
 
             if state.account_id and state.account_id != account.pk:
                 return JsonResponse(
-                    {
-                        "error": "The configured Flex query is linked to another account."
-                    },
+                    {"error": "The configured Flex query is linked to another account."},
                     status=400,
                 )
 
             if state.lease_until and state.lease_until > timezone.now():
-                return JsonResponse(
-                    {"error": "An IBKR sync is already running."}, status=409
-                )
+                return JsonResponse({"error": "An IBKR sync is already running."}, status=409)
 
-            if state.last_attempt and timezone.now() - state.last_attempt < timedelta(
-                seconds=60
-            ):
+            if state.last_attempt and timezone.now() - state.last_attempt < timedelta(seconds=60):
                 return JsonResponse(
                     {"error": "Wait one minute before requesting another sync."},
                     status=429,
@@ -267,6 +275,7 @@ def sync_status(request: HttpRequest) -> JsonResponse:
             else None,
             "imported": state.imported if belongs else 0,
             "duplicates": state.duplicates if belongs else 0,
+            "conflicts": state.conflicts if belongs else [],
         },
         status=202 if request.method == "POST" else 200,
     )
