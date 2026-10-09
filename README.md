@@ -295,3 +295,21 @@ An empty or delayed report does not mean the current session is complete; Last i
 updates only for new executions; Last successful sync tracks report checks.
 Failures retry up to three times with increasing delays. A database lease prevents
 concurrent server processes from importing the same report simultaneously.
+
+
+### Schwab automatic imports
+
+Set `SCHWAB_APP_KEY`, `SCHWAB_APP_SECRET`, and
+`SCHWAB_CALLBACK_URL=https://127.0.0.1:8182` in `backend/.env`.
+Select your Schwab account, then Trade journal → Broker sync → Connect Schwab.
+Sign in with Schwab in the browser. A temporary loopback HTTPS listener closes
+after sign-in or five minutes. The local callback uses a self-signed certificate.
+Tokens are stored in ignored `backend/.schwab/` with owner-only permissions.
+Sync runs on startup, weekdays at 1:15 p.m. Pacific while the backend is running,
+and via Sync now. First sync checks 60 days; subsequent syncs overlap seven days
+and catch up across downtime. Empty checks do not advance Last import.
+Stocks and standard options are supported. Futures, nonstandard/multi-leg
+transaction records, changed fills and ambiguous cash/fees are held for review.
+An existing CSV/manual ledger requires reconciliation before API imports; do not
+mix methods expecting automatic cross-format deduplication yet. Reconnect through
+Schwab when authorization expires. No order submission endpoints are called.

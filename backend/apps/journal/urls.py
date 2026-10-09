@@ -8,7 +8,13 @@ from .charts import trade_chart
 from .statistics import statistics
 from .strategies import strategies, strategy_detail, trade_strategy
 
+from .schwab_connection import connection as schwab_connection
+
+from .schwab_sync import sync_status as schwab_sync_status
+
 urlpatterns = [
+    path("api/schwab/sync/", schwab_sync_status),
+    path("api/schwab/connection/", schwab_connection),
     path("api/broker-sync/", sync_status),
     path("api/accounts/", accounts),
     path("api/accounts/<int:pk>/", account_detail),

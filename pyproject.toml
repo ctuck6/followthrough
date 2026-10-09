@@ -9,6 +9,7 @@ description = "A personal trading execution and rule-adherence journal"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+  "schwab-py==1.5.1",
   "Django==5.2.17",
   "asgiref==3.12.1",
   "sqlparse==0.6.0",

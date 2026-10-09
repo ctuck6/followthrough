@@ -12,3 +12,5 @@ backend/media/
 backend/staticfiles/
 .pytest_cache/
 .ruff_cache/
+
+backend/.schwab/

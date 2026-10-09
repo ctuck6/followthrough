@@ -1,4 +1,4 @@
-import {AccountSwitcher, HeaderControls, useAccountViewState} from './AccountScope.jsx';
+import {HeaderControls, useAccountViewState} from './AccountScope.jsx';
 import PerformanceCards from './PerformanceCards.jsx';
 import RangePicker, {rangePresets} from './components/RangePicker.jsx';
 import React, {useState} from 'react';
@@ -21,7 +21,7 @@ export default function Calendar({days, trades=[], summaries={}, today, onOpen})
   return <div className="calendar-view">
     <section className="panel calendar-summary" aria-label="Average execution grade">
       <div className="calendar-grade-and-streak"><div><span className="eyebrow">AVERAGE EXECUTION GRADE</span><div className="grade-number" aria-live="polite">{average.letter}<span>{average.score===null?'No graded days':`${average.score}% adherence`}</span></div><p className="subtle">{average.count} graded {average.count===1?'day':'days'} · Each day counts equally</p></div><div className="consistency-streak" role="status" aria-label={`Consistency streak: ${streak} trading ${streak===1?'day':'days'}`}><span className="eyebrow">CONSISTENCY STREAK</span><div className="streak-value"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg><strong>{streak}</strong></div><span className="streak-unit">{streak===1?'trading day':'trading days'}</span></div></div>
-      <HeaderControls><div className="header-actions"><div className="calendar-range-control"><span className="field-label">Average timeframe</span><button type="button" className="date-picker-trigger" aria-haspopup="dialog" aria-label="Choose average timeframe" onClick={()=>setPickerOpen(true)}>{period==='custom'?'Custom range':rangePresets.find(([key])=>key===period)?.[1]} <svg className="date-picker-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></button><small>{start} → {end}</small></div><AccountSwitcher/></div></HeaderControls>
+      <HeaderControls><div className="header-actions"><div className="calendar-range-control"><span className="field-label">Average timeframe</span><button type="button" className="date-picker-trigger" aria-haspopup="dialog" aria-label="Choose average timeframe" onClick={()=>setPickerOpen(true)}>{period==='custom'?'Custom range':rangePresets.find(([key])=>key===period)?.[1]} <svg className="date-picker-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></button><small>{start} → {end}</small></div></div></HeaderControls>
       {pickerOpen&&<RangePicker value={[start,end]} period={period} today={today} onClose={()=>setPickerOpen(false)} onApply={(range,key)=>{setCustom(range);setPeriod(key);setPickerOpen(false)}}/>}
     </section>
     <PerformanceCards trades={trades} summaries={summaries} start={start} end={end} includePnl average/>

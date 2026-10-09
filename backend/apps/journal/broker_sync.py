@@ -196,6 +196,9 @@ def worker() -> None:
         try:
             close_old_connections()
             run_sync(startup=startup)
+            from .schwab_sync import run_all
+
+            run_all(startup=startup)
             startup = False
         except Exception:  # noqa: BLE001 — keep scheduler alive without logging secrets
             logging.getLogger(__name__).warning("IBKR sync scheduler unavailable; retrying.")

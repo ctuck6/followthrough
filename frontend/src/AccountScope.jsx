@@ -18,7 +18,7 @@ export function AccountSwitcher() {
   const {accounts, accountId, switchAccount, switching, hasUnassigned} = useAccount();
   return <Select wrapperClassName="account-switcher" aria-label="Brokerage account" value={accountId} disabled={switching || !accounts.length} onChange={e=>switchAccount(e.target.value)}>
     {(hasUnassigned || !accounts.length || accountId==='unassigned') && <option value="unassigned">{accounts.length?'Unassigned':'No accounts'}</option>}
-    {accounts.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}
+    {accounts.map(a=><option key={a.id} value={a.id}>{a.broker_name} | {a.name}</option>)}
   </Select>;
 }
 export default function AccountScope({children}) {
